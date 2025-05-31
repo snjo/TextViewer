@@ -1,8 +1,12 @@
 ﻿
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Drawing;
+using System.IO;
 using System.Net.Quic;
+using System.Runtime;
 using System.Text;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace TextViewer;
 
@@ -11,7 +15,9 @@ class Program
     private static ConsoleColor defaultForeColor = Console.ForegroundColor;
     private static ConsoleColor defaultBackColor = Console.BackgroundColor;
     private static string[] lines = { };
-    private static string? textfile = null;
+    private static string? monitorTextFile = null;
+    private static string? monitorDirectory = null;
+    private static string monitorFilter = "*.*";
     private static bool updateViewRequested = true;
     private static int scrollLine = 0;
     private static DateTime lastFileUpdate = DateTime.MinValue;
@@ -19,50 +25,92 @@ class Program
     private static bool forceFileUpdate = false;
     private static int fileUpdateCountdown = -1;
 
+    private enum InterfaceMode
+    {
+        MainMenu,
+        FileView,
+        DirectoryView,
+        SelectFile,
+        SelectDirectory,
+        END
+    }
+    private static InterfaceMode interfaceMode = InterfaceMode.MainMenu;
+
+    private static void parseArguments(string[] arguments)
+    {
+        //test
+        //foreach (string arg in arguments)
+        //{ 
+        //    Console.WriteLine("Arg: >" + arg + "<");
+            
+        //}
+        //Console.ReadKey();
+
+
+        if (arguments.Length == 0)
+            return;
+
+        if (arguments.Length == 1)
+        {
+            string first = arguments[0];
+            if (first == "-" && first.Length < 3)
+            {
+                Console.WriteLine($"Error in argument: {first}");
+                Console.WriteLine("Use -? to show Help");
+            }
+
+            if (first == "-?" || first == "/?")
+            {
+                ShowHelp();
+                RevertConsoleColors();
+                Environment.Exit(0);
+            }
+
+            string argFile = arguments[0];
+            arguments = [ "-f", argFile ];
+        }
+
+        if (arguments.Length >= 2)
+        {
+            if (arguments[0] == "-f")
+            {
+                interfaceMode = InterfaceMode.FileView;
+                monitorTextFile = Path.GetFullPath(arguments[1]);
+                monitorDirectory = Path.GetDirectoryName(monitorTextFile);
+                SetupWatcher(monitorDirectory, monitorTextFile);
+            }
+            else if (arguments[0] == "-d")
+            {
+                monitorTextFile = "";
+                monitorDirectory = arguments[1];
+                SetupWatcher(monitorDirectory, "*.*");
+                interfaceMode = InterfaceMode.DirectoryView;
+                if (arguments.Length >= 3)
+                {
+                    monitorFilter = arguments[2];
+                }
+                //Console.WriteLine($"Directory mode: dir:{monitorDirectory} file:{monitorTextFile} filter:{monitorFilter}");
+                //Console.ReadKey();
+            }
+            return;
+        }
+        //interfaceMode = InterfaceMode.MainMenu;
+    }
+
     static void Main(string[] args)
     {
         Console.OutputEncoding = Encoding.Unicode;
         int oldBufferWidth = Console.BufferWidth;
         int oldBufferHeight = Console.BufferHeight;
+        
+        parseArguments(args);
 
-        textfile = "";
-
-        string? directory = "";
-        if (textfile != "")
+        if (interfaceMode == InterfaceMode.FileView)
         {
-            directory = Path.GetDirectoryName(Path.GetFullPath(textfile));
-        }
-        Debug.WriteLine($"Loading file {textfile}, Direcory: {directory}");
-
-        if (directory is not null)
-        {
-            SetupWatcher(textfile);
-        }
-
-        if (args.Length > 0)
-        {
-            if (File.Exists(args[0]))
+            if (LoadFile(monitorTextFile, true) == false)
             {
-                textfile = Path.GetFullPath(args[0]);
-                Console.WriteLine($"File in argument : {textfile}");
+                interfaceMode = InterfaceMode.MainMenu;
             }
-            else
-            {
-                Console.WriteLine($"File in argument does not exist: '{args[0]}'");
-                Console.WriteLine("Exiting.");
-                Console.ReadKey();
-                Environment.Exit(0);
-            }
-
-        }
-
-        if (textfile == "")
-        {
-            OpenFileDialog(watcher);
-        }
-        else
-        {
-            LoadFile(textfile, true);
         }
 
 
@@ -74,13 +122,14 @@ class Program
         {
             if (fileUpdateCountdown == 0) // the watcher has detected a change, wait for the file to complete, maybe there's two triggers
             {
-                LoadFile(textfile, false, false); // Load file, don't set up watcher again, already active
+                if (interfaceMode == InterfaceMode.FileView) LoadFile(monitorTextFile, false, false); // Load file, don't set up watcher again, already active
                 forceFileUpdate = false;
                 fileUpdateCountdown = -1; // update countdown parked
+                updateViewRequested = true;
             }
             else if (forceFileUpdate)
             {
-                LoadFile(textfile, false);
+                LoadFile(monitorTextFile, false);
                 forceFileUpdate = false;
             }
 
@@ -107,64 +156,43 @@ class Program
 
             if (Console.KeyAvailable)
             {
+                updateViewRequested = true;
                 ConsoleKeyInfo keyInput = Console.ReadKey();
-                
-                int linemax = Math.Max(lines.Length - 1, 0); // prevent error on 0 size file
 
                 if (keyInput.Key == ConsoleKey.Q)
                 {
                     RevertConsoleColors();
                     quit = true;
                 }
-                else if (keyInput.Key == ConsoleKey.PageDown || (keyInput.Key == ConsoleKey.DownArrow && keyInput.Modifiers == ConsoleModifiers.Shift))
+                else if (keyInput.Key == ConsoleKey.Escape)
                 {
-                    scrollLine += 10;
-                    scrollLine = Math.Clamp(scrollLine, 0, linemax);
-                }
-                else if (keyInput.Key == ConsoleKey.PageUp || (keyInput.Key == ConsoleKey.UpArrow && keyInput.Modifiers == ConsoleModifiers.Shift))
-                {
-                    scrollLine -= 10;
-                    scrollLine = Math.Clamp(scrollLine, 0, linemax);
-                }
-                else if (keyInput.Key == ConsoleKey.DownArrow)
-                {
-                    scrollLine++;
-                    scrollLine = Math.Clamp(scrollLine, 0, linemax);
-                }
-                else if (keyInput.Key == ConsoleKey.UpArrow)
-                {
-                    scrollLine--;
-                    int max = Math.Max(lines.Length - 1, 0); // prevent error on 0 size file
-                    scrollLine = Math.Clamp(scrollLine, 0, linemax);
-                }
-                else if (keyInput.Key == ConsoleKey.F5)
-                {
-                    forceFileUpdate = true;
-                }
-                else if (keyInput.Key == ConsoleKey.L)
-                {
-                    SetColor(ConsoleColor.Yellow);
-                    Console.SetCursorPosition(10, 5);
-                    Console.WriteLine("┌─────────────────┐");
-                    Console.SetCursorPosition(10, 6);
-                    Console.WriteLine("│ Go go line:     │");
-                    Console.SetCursorPosition(10, 7);
-                    Console.WriteLine("└─────────────────┘");
-                    Console.SetCursorPosition(24, 6);
-                    string lineSelect = Console.ReadLine() + "";
-                    if (int.TryParse(lineSelect, out int gotoLine))
+                    if (interfaceMode != InterfaceMode.MainMenu)
                     {
-                        gotoLine--; // internal line 0, show as line 1
-                        int max = Math.Max(0, linemax);
-                        scrollLine = Math.Clamp(gotoLine, 0, max);
-
-                        Debug.WriteLine($"line selected: {gotoLine}, scroll set to: {scrollLine}. Lines length: {lines.Length}, max: {max}");
+                        interfaceMode = InterfaceMode.MainMenu;
+                    }
+                    else
+                    {
+                        RevertConsoleColors();
+                        quit = true;
                     }
                 }
-                else if (keyInput.Key == ConsoleKey.O)
+                else if (keyInput.Key == ConsoleKey.M || keyInput.Key == ConsoleKey.Escape)
                 {
-                    OpenFileDialog(watcher);
+                    interfaceMode = InterfaceMode.MainMenu;
                 }
+                else if (keyInput.Key == ConsoleKey.F)
+                {
+                    interfaceMode = InterfaceMode.SelectFile;
+                }
+                else if (keyInput.Key == ConsoleKey.D)
+                {
+                    interfaceMode = InterfaceMode.SelectDirectory;
+                }
+                else if (interfaceMode == InterfaceMode.FileView)
+                {
+                    HandleFileViewKeys(keyInput);
+                }
+
                 UpdateView();
                 lastViewUpdate = DateTime.Now;
             }
@@ -175,16 +203,129 @@ class Program
         }
     }
 
-    private static void OpenFileDialog(FileSystemWatcher? watcher)
+    private static void HandleFileViewKeys(ConsoleKeyInfo keyInput)
     {
+        int linemax = Math.Max(lines.Length - 1, 0); // prevent error on 0 size file
+
+        if (keyInput.Key == ConsoleKey.PageDown || (keyInput.Key == ConsoleKey.DownArrow && keyInput.Modifiers == ConsoleModifiers.Shift))
+        {
+            scrollLine += 10;
+            scrollLine = Math.Clamp(scrollLine, 0, linemax);
+        }
+        else if (keyInput.Key == ConsoleKey.PageUp || (keyInput.Key == ConsoleKey.UpArrow && keyInput.Modifiers == ConsoleModifiers.Shift))
+        {
+            scrollLine -= 10;
+            scrollLine = Math.Clamp(scrollLine, 0, linemax);
+        }
+        else if (keyInput.Key == ConsoleKey.DownArrow)
+        {
+            scrollLine++;
+            scrollLine = Math.Clamp(scrollLine, 0, linemax);
+        }
+        else if (keyInput.Key == ConsoleKey.UpArrow)
+        {
+            scrollLine--;
+            int max = Math.Max(lines.Length - 1, 0); // prevent error on 0 size file
+            scrollLine = Math.Clamp(scrollLine, 0, linemax);
+        }
+        else if (keyInput.Key == ConsoleKey.F5)
+        {
+            forceFileUpdate = true;
+        }
+        else if (keyInput.Key == ConsoleKey.L && interfaceMode == InterfaceMode.FileView)
+        {
+            SetColor(ConsoleColor.Yellow);
+            Console.SetCursorPosition(10, 5);
+            Console.WriteLine("┌─────────────────┐");
+            Console.SetCursorPosition(10, 6);
+            Console.WriteLine("│ Go go line:     │");
+            Console.SetCursorPosition(10, 7);
+            Console.WriteLine("└─────────────────┘");
+            Console.SetCursorPosition(24, 6);
+            string lineSelect = Console.ReadLine() + "";
+            if (int.TryParse(lineSelect, out int gotoLine))
+            {
+                gotoLine--; // internal line 0, show as line 1
+                int max = Math.Max(0, linemax);
+                scrollLine = Math.Clamp(gotoLine, 0, max);
+
+                Debug.WriteLine($"line selected: {gotoLine}, scroll set to: {scrollLine}. Lines length: {lines.Length}, max: {max}");
+            }
+        }
+    }
+
+    private static void ShowHelp()
+    {
+        Console.WriteLine("Monitors a file or directory for changes and highlights any recently edited files. Updates file contents when modified.");
+        Console.WriteLine();
+        Console.WriteLine("TEXTVIEWER [file]");
+        Console.WriteLine("TEXTVIEWER -f file");
+        Console.WriteLine("TEXTVIEWER -d directory [filter]");
+        Console.WriteLine();
+        Console.WriteLine("Example:");
+        Console.WriteLine("textviewer -d c:\\temp *.txt    Don't use backslash at the end of a directory argument");
+        Console.WriteLine("textviewer -d \"c:\\Program Files\" *.*    Don't use backslash at the end of a directory argument");
+
+    }
+
+    private static void OpenDirectoryDialog()
+    {
+        Console.Clear();
+        SetColor(ConsoleColor.Black, ConsoleColor.Cyan);
+        Console.WriteLine($" Open Directory".PadRight(Console.BufferWidth));
+        SetColor(ConsoleColor.White, ConsoleColor.Black);
+        Console.WriteLine();
+
         SetColor(ConsoleColor.Yellow);
-        Console.SetCursorPosition(10, 5);
-        Console.WriteLine("┌────────────────────────────────────────────────────┐");
-        Console.SetCursorPosition(10, 6);
-        Console.WriteLine("│ Open File:                                         │");
-        Console.SetCursorPosition(10, 7);
-        Console.WriteLine("└────────────────────────────────────────────────────┘");
-        Console.SetCursorPosition(24, 6);
+        Console.Write(" Directory: ");
+        string directorySelect = Console.ReadLine() + "";
+        if (directorySelect.Length == 0) directorySelect = ".";
+        Console.Write(" Filter: ");
+        SetColor(ConsoleColor.Gray);
+        Console.Write("*");
+        SetColor(ConsoleColor.White);
+        Console.SetCursorPosition(9, 3);
+        monitorFilter = Console.ReadLine() + "";
+        if (monitorFilter == null || monitorFilter == "")
+        {
+            monitorFilter = "*";
+        }
+
+
+        if (directorySelect is null)
+        {
+            interfaceMode = InterfaceMode.MainMenu;
+            return;
+        }
+
+        if (Directory.Exists(directorySelect))
+        {
+            monitorDirectory = directorySelect;
+            interfaceMode = InterfaceMode.DirectoryView;
+            SetupWatcher(directorySelect, null);
+        }
+        else
+        {
+            SetColor(ConsoleColor.Red);
+            Console.WriteLine("Directory does not exist.");
+            Debug.WriteLine("Directory does not exist.");
+            Console.ReadKey();
+            Debug.WriteLine("Exiting Directory select");
+            interfaceMode = InterfaceMode.MainMenu;
+            updateViewRequested = true;
+        }
+    }
+
+    private static void OpenFileDialog()
+    {
+        Console.Clear();
+        SetColor(ConsoleColor.Black, ConsoleColor.Cyan);
+        Console.WriteLine($" Open File".PadRight(Console.BufferWidth));
+        SetColor(ConsoleColor.White, ConsoleColor.Black);
+        Console.WriteLine();
+
+        SetColor(ConsoleColor.Yellow);
+        Console.Write(" File: ");
         string fileSelect = Console.ReadLine() + "";
 
         Debug.WriteLine($"File selected {fileSelect}");
@@ -207,35 +348,103 @@ class Program
             Debug.WriteLine($"File selected {fileSelect} is null or doesn't exist");
         }
 
-        if (LoadFile(fileSelect, true))
+        if (fileSelect != null && fileSelect.Length > 0 && LoadFile(Path.GetFullPath(fileSelect), true))
         {
             Debug.WriteLine("Load file succeeded");
-            textfile = fileSelect;
+            monitorTextFile = fileSelect;
+            interfaceMode = InterfaceMode.FileView;
         }
         else
         {
-            textfile = "NO FILE";
-            lines = ["", " Press O to open a file", ""];
-            Debug.WriteLine("Load file failed");
+            interfaceMode = InterfaceMode.MainMenu;
         }
 	}
 
-	private static void SetupWatcher(string? filePath)
+	private static void SetupWatcher(string? directory, string? filePath)
     {
-        if (filePath is null || filePath == "") return; //file = "";
-        string fullpath = Path.GetFullPath(filePath);
-        string folder = Path.GetDirectoryName(fullpath) + "";
-        string fileName = Path.GetFileName(filePath);
-        Debug.WriteLine($"Setting up watcher, file: {fileName}, dir: {folder} --- path: {fullpath}");
-        watcher = new(folder, fileName);
-        watcher.NotifyFilter = NotifyFilters.LastWrite;
+        string fullpath;
+        string folder;
+        string filter;
+
+        if (filePath is null || filePath == "")
+        {
+            if (directory is null) return;
+            if (directory == "") directory = ".";
+            fullpath = Path.GetFullPath(directory);
+            folder = fullpath;
+            filter = "";
+        }
+        else
+        {
+            fullpath = Path.GetFullPath(filePath);
+            folder = Path.GetDirectoryName(fullpath) + "";
+            filter = Path.GetFileName(filePath);
+        }
+
+        
+        
+        Debug.WriteLine($"Setting up watcher, filter: {filter}, dir: {folder} --- path: {fullpath}");
+        watcher = new(folder, filter);
+
+        watcher.NotifyFilter = NotifyFilters.Attributes
+                      | NotifyFilters.CreationTime
+                      | NotifyFilters.DirectoryName
+                      | NotifyFilters.FileName
+                      | NotifyFilters.LastAccess
+                      | NotifyFilters.LastWrite
+                      | NotifyFilters.Security
+                      | NotifyFilters.Size;
+
         watcher.Changed += Watcher_OnChanged;
+        watcher.Created += Watcher_OnChanged;
+        watcher.Deleted += Watcher_OnChanged;
+        watcher.Renamed += Watcher_OnChanged;
+        watcher.Error += Watcher_OnError;
+
+
+
+        //watcher.NotifyFilter = NotifyFilters.LastWrite;
+
         watcher.EnableRaisingEvents = true;
         //watcher.Filter = "*.*";
         Debug.WriteLine($"Watcher setup complete: {watcher is not null}, {watcher?.Path} {watcher?.Filter}");
     }
 
+    private static void Watcher_OnError(object sender, ErrorEventArgs e)
+    {
+        Debug.WriteLine($"Watcher error: {e.GetException().Message}");
+    }
+
     private static void UpdateView()
+    {
+        if (interfaceMode == InterfaceMode.MainMenu)
+        {
+            UpdateMainMenuView();
+        }
+        else if (interfaceMode == InterfaceMode.FileView)
+        {
+            UpdateFileView();
+        }
+        else if (interfaceMode == InterfaceMode.DirectoryView)
+        {
+            UpdateDirectoryView();
+        }
+        else if (interfaceMode == InterfaceMode.SelectFile)
+        {
+            OpenFileDialog();
+        }
+        else if (interfaceMode == InterfaceMode.SelectDirectory)
+        {
+            OpenDirectoryDialog();
+        }
+        else
+        {
+            Console.Clear();
+            Console.WriteLine("Huh, what happened?");
+        }
+    }
+
+    private static void UpdateFileView()
     {
         //Debug.WriteLine($"Updating View @{DateTime.Now.ToShortTimeString()}");
         Console.Clear();
@@ -245,10 +454,10 @@ class Program
         ConsoleColor TextBG = ConsoleColor.Black;
         Console.SetCursorPosition(0, 0);
         SetColor(TitleFG, TitleBG);
-        string displayFileName = textfile + "";
+        string displayFileName = monitorTextFile + "";
         if (displayFileName.Length > Console.BufferWidth - 41)
         {
-            displayFileName = Path.GetFileName(textfile) + "";
+            displayFileName = Path.GetFileName(monitorTextFile) + "";
         }
 
         string appFileLine = $"┃ Text Viewer ┃ '{displayFileName}' ";
@@ -256,33 +465,7 @@ class Program
 
         Console.Write(appFileLine.Substring(0, Math.Min(appFileLine.Length, Console.BufferWidth - dateLine.Length)).PadRight(Console.BufferWidth - dateLine.Length - 2, ' '));
         Console.Write("┃");
-        TimeSpan timeSinceFileWrite = DateTime.Now - lastFileUpdate;
-        //if (timeSinceFileWrite < TimeSpan.FromMinutes(1))
-        //{
-        TimeSpan Shortest = TimeSpan.FromMinutes(5);
-        TimeSpan Medium = TimeSpan.FromMinutes(60);
-        TimeSpan Old = TimeSpan.FromMinutes(600);
-
-        if (timeSinceFileWrite < Shortest)
-        {
-            SetColor(ConsoleColor.Yellow);
-            //Debug.WriteLine($"File is new {timeSinceFileWrite.TotalMinutes}");
-        }
-        else if (timeSinceFileWrite < Medium)
-        {
-            SetColor(ConsoleColor.Blue);
-            //Debug.WriteLine($"File is medium {timeSinceFileWrite.TotalMinutes}");
-        }
-        else if (timeSinceFileWrite < Old)
-        {
-            SetColor(ConsoleColor.DarkBlue);
-            //Debug.WriteLine($"File is medium {timeSinceFileWrite.TotalMinutes}");
-        }
-        else
-        {
-            SetColor(ConsoleColor.DarkGray);
-            //Debug.WriteLine($"File is old {timeSinceFileWrite.TotalMinutes}");
-        }
+        SetColorFromAge(lastFileUpdate);
 
         Console.Write(dateLine);
         SetColor(TitleFG);
@@ -324,7 +507,146 @@ class Program
             }
         }
         Console.WriteLine($"┗━━━━━━┻".PadRight(Console.BufferWidth - 1, '━') + "┛");
-        Console.WriteLine($" [Q] Quit   [L] Select Line   [O] Open File   [Arrows] scroll   [PgUp/PgDn or Shift+Arrow] scroll 10   [F5] Refresh");
+        Console.WriteLine($" [Q] Quit  [Esc] Menu  [L] Select Line  [Arrows] scroll  [PgUp/PgDn or Shift+Arrow] scroll 10   [F5] Refresh");
+    }
+
+    private static void SetColorFromAge(DateTime time)
+    {
+        TimeSpan timeSinceFileWrite = DateTime.Now - time;
+        //if (timeSinceFileWrite < TimeSpan.FromMinutes(1))
+        //{
+        TimeSpan Shortest = TimeSpan.FromMinutes(5);
+        TimeSpan Medium = TimeSpan.FromMinutes(60);
+        TimeSpan Old = TimeSpan.FromMinutes(600);
+
+        if (timeSinceFileWrite < Shortest)
+        {
+            SetColor(ConsoleColor.Yellow);
+        }
+        else if (timeSinceFileWrite < Medium)
+        {
+            SetColor(ConsoleColor.Blue);
+        }
+        else if (timeSinceFileWrite < Old)
+        {
+            SetColor(ConsoleColor.DarkBlue);
+        }
+        else
+        {
+            SetColor(ConsoleColor.DarkGray);
+        }
+    }
+
+    private static void UpdateDirectoryView()
+    {
+        
+        Console.Clear();
+        if (Directory.Exists(monitorDirectory) == false)
+        {
+            Console.WriteLine($"Directory does not exist: {monitorDirectory}");
+            Console.WriteLine("Check that command line arguments don't end in a backslash.");
+            interfaceMode = InterfaceMode.MainMenu;
+            return;
+        }
+
+        SetColor(ConsoleColor.Black, ConsoleColor.Cyan);
+        if (monitorDirectory == null) monitorDirectory = ".";
+        Console.WriteLine($" DirectoryView : {Path.GetFullPath(monitorDirectory)}".PadRight(Console.BufferWidth));
+        SetColor(ConsoleColor.White, ConsoleColor.Black);
+        Console.WriteLine();
+
+        if (monitorDirectory is null)
+        {
+            Console.WriteLine("Error, directory is null");
+        }
+        else
+        {
+            string[] subDirectories = [];
+            string[] filesinDirectory = [];
+            try
+            {
+                subDirectories = Directory.GetDirectories(monitorDirectory, monitorFilter);
+                filesinDirectory = Directory.GetFiles(monitorDirectory, monitorFilter);
+            }
+            catch
+            {
+                Console.WriteLine($"Error parsing path {monitorDirectory}, could not get list of files and subfolders.");
+            }
+            SetColor(ConsoleColor.White);
+            Console.WriteLine("Size        Created           Modified           Age  Name ");
+
+            foreach (string dir in subDirectories)
+            {
+                SetColor(ConsoleColor.Yellow);
+                DirectoryInfo dirInfo = new DirectoryInfo(dir);
+                Console.Write($"  <DIR>     ");
+                SetColor(ConsoleColor.Gray);
+                Console.Write($"{DateAndTimeString(dirInfo.CreationTime)}");
+                SetColorFromAge(dirInfo.LastWriteTime);
+                Console.Write($"  {DateAndTimeString(dirInfo.LastWriteTime)} ");
+                Console.Write($"{((int)(DateTime.Now - dirInfo.LastWriteTime).TotalDays).ToString().PadLeft(4,' ')}d  ");
+                SetColor(ConsoleColor.Yellow);
+                Console.WriteLine(Path.GetFileName(dir));
+            }
+            
+            SetColor(ConsoleColor.Cyan);
+
+            foreach (string file in filesinDirectory)
+            {
+                FileAttributes attributes = File.GetAttributes(file);
+                FileInfo fileInfo = new FileInfo(file);
+                long size = fileInfo.Length;
+                int sizeFraction = 1;
+                if (size > 1024) sizeFraction = 1024;
+                if (size >= 1024 * 1024) sizeFraction = 1024*1024;
+                if (size >= 1024 * 1024 * 1024) sizeFraction = 1024 * 1024 * 1024;
+                string sizeDisplay = (size / sizeFraction).ToString();
+                if (sizeFraction == 1) sizeDisplay += " B ";
+                if (sizeFraction == 1024) sizeDisplay += " KB";
+                if (sizeFraction == 1024*1024) sizeDisplay += " MB";
+                if (sizeFraction == 1024 * 1024 * 1024) sizeDisplay += " GB";
+                Console.Write($"{sizeDisplay.PadLeft(10)}  ");
+                SetColor(ConsoleColor.Gray);
+                Console.Write($"{DateAndTimeString(fileInfo.CreationTime)}  ");
+                SetColorFromAge(fileInfo.LastWriteTime);
+                Console.Write($"{DateAndTimeString(fileInfo.LastWriteTime)} ");
+                Console.Write($"{((int)(DateTime.Now - fileInfo.LastWriteTime).TotalDays).ToString().PadLeft(4, ' ')}d  ");
+                SetColor(ConsoleColor.Cyan);
+                Console.WriteLine(Path.GetFileName(file));
+            }
+        }
+        Console.WriteLine();
+        SetColor(ConsoleColor.Cyan);
+        Console.WriteLine($" [Q] Quit  [Esc] Menu  [F] Open File  [D] Open Directory  [F5] Refresh");
+    }
+
+    private static string DateAndTimeString( DateTime date )
+    {
+        return $"{date.ToShortDateString()} {date.ToShortTimeString()}";
+    }
+
+    private static void UpdateMainMenuView()
+    {
+        SetColor(ConsoleColor.White, ConsoleColor.Black);
+        Console.Clear();
+        SetColor(ConsoleColor.Black, ConsoleColor.Cyan);
+        Console.WriteLine(" Main Menu".PadRight(Console.BufferWidth));
+        Console.WriteLine();
+        
+        SetColor(ConsoleColor.White, ConsoleColor.Black);
+        Console.Write(" F   ");
+        SetColor(ConsoleColor.Cyan);
+        Console.WriteLine("Open File");
+
+        SetColor(ConsoleColor.White);
+        Console.Write(" D   ");
+        SetColor(ConsoleColor.Cyan);
+        Console.WriteLine("Open Directory");
+
+        SetColor(ConsoleColor.White);
+        Console.Write(" Q   ");
+        SetColor(ConsoleColor.Cyan);
+        Console.WriteLine("Quit");
     }
 
     public static IEnumerable<string> SplitByLength(string str, int maxLength) {
@@ -351,48 +673,49 @@ class Program
         fileUpdateCountdown = 10; // wait a bit before opening the file, it might still be held by the save process. Prevents double triggering of file load if watcher event fires twice
 	}
 
-    private static bool LoadFile(string? file, bool showError, bool initWatcher = true)
+    private static bool LoadFile(string? filePath, bool showError, bool initWatcher = true)
     {
-        if (file is not null)
+        if (filePath is not null)
         {
-            if (File.Exists(file))
-            {
+            //if (File.Exists(filePath))
+            //{
                 try
                 {
-                    lines = File.ReadAllLines(file);
+                    lines = File.ReadAllLines(filePath);
                     updateViewRequested = true;
-                    lastFileUpdate = File.GetLastWriteTime(file);
+                    lastFileUpdate = File.GetLastWriteTime(filePath);
 
-                    Debug.WriteLine($"File loaded {file}");
+                    Debug.WriteLine($"File loaded {filePath}");
 
                     if (initWatcher)
                     {
                         watcher?.Dispose();
                         Debug.WriteLine("Asking to update Watcher");
-                        SetupWatcher(file);
+                        string? dir = Path.GetDirectoryName(filePath);
+                        if (dir != null)
+                        { 
+                            SetupWatcher(dir, filePath); 
+                        }
                     }
 
                     return true;
                 }
-                catch
+                catch (Exception ex)
                 {
-                    Debug.WriteLine("Can't read file");
+                    SetColor(ConsoleColor.Red);
+                    Console.WriteLine($" Error opening file!");
+                    Console.WriteLine($" {ex.Message}");
+                    Console.ReadKey();
+                    interfaceMode = InterfaceMode.MainMenu;
+                    return false;
                 }
-            }
+            //}
         }
-
-        if (showError)
+        else if (showError)
         {
             SetColor(ConsoleColor.Red);
-            Console.SetCursorPosition(10, 5);
-            Console.WriteLine($"┌─────────────────────────────────────────────────────┐");
-            Console.SetCursorPosition(10, 6);
-            Console.WriteLine($"│                Error opening file!                  │");
-            Console.SetCursorPosition(10, 7);
-            Console.WriteLine($"│ {file} ".PadRight(54, ' ') + "│");
-            Console.SetCursorPosition(10, 8);
-            Console.WriteLine($"└──────────────────────────────────────────────[OK]───┘");
-            Console.SetCursorPosition(35, 6);
+            Console.WriteLine($" File not found:");
+            Console.WriteLine(" " + filePath);
             Console.ReadKey();
         }
         return false;
