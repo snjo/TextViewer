@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime;
 using System.Text;
 using System.Threading.Tasks;
 using static TextViewer.TextViewerLoop;
@@ -10,16 +11,25 @@ namespace TextViewer
 {
     internal class DirectoryView (TextViewerLoop parent)
     {
-
+        int selectedLine = 0;
+        string[] subDirectories = [];
+        string[] filesinDirectory = [];
 
         internal void OpenDirectoryDialog()
         {
+            selectedLine = 0;
             Cosmetic.ShowTitleBar($"Open Directory");
 
             Cosmetic.SetColor(ConsoleColor.Yellow);
             Console.Write(" Directory: ");
             string directorySelect = Console.ReadLine() + "";
             if (directorySelect.Length == 0) directorySelect = ".";
+            if (directorySelect.Substring(directorySelect.Length-1,1) != "\\")
+            {
+                // this prevents "c:" from being interpreted as the program's folder by making it "c:\"
+                directorySelect += "\\";
+                Debug.WriteLine($"Adding \\ to end of directory: {directorySelect}");
+            }
             Console.Write(" Filter: ");
             Cosmetic.SetColor(ConsoleColor.Gray);
             Console.Write("*");
@@ -74,8 +84,6 @@ namespace TextViewer
             }
             else
             {
-                string[] subDirectories = [];
-                string[] filesinDirectory = [];
                 try
                 {
                     subDirectories = Directory.GetDirectories(parent.monitorDirectory, parent.monitorFilter);
@@ -86,50 +94,152 @@ namespace TextViewer
                     Console.WriteLine($"Error parsing path {parent.monitorDirectory}, could not get list of files and subfolders.");
                 }
                 Cosmetic.SetColor(ConsoleColor.White);
-                Console.WriteLine("Size        Created           Modified           Age  Name ");
+                Console.WriteLine("  Size       Created           Modified           Age  Name ");
+
+                int itemCount = 0;
+                //int topMargin = 3;
 
                 foreach (string dir in subDirectories)
                 {
+                    PlaceCursor(itemCount);
                     Cosmetic.SetColor(ConsoleColor.Yellow);
                     DirectoryInfo dirInfo = new(dir);
                     Console.Write($"  <DIR>     ");
                     Cosmetic.SetColor(ConsoleColor.Gray);
-                    Console.Write($"{TextViewerLoop.DateAndTimeString(dirInfo.CreationTime)}");
+                    Console.Write($"{TextViewerLoop.DateAndTimeString(dirInfo.CreationTime)}  ");
                     Cosmetic.SetColorFromAge(dirInfo.LastWriteTime);
-                    Console.Write($"  {TextViewerLoop.DateAndTimeString(dirInfo.LastWriteTime)} ");
-                    Console.Write($"{(int)(DateTime.Now - dirInfo.LastWriteTime).TotalDays,4}d  "); // pad left 4
+                    Console.Write($"{TextViewerLoop.DateAndTimeString(dirInfo.LastWriteTime)}  ");
+                    string timeSiceText = TimeSinceToString(dirInfo.LastWriteTime);
+                    Console.Write($"{timeSiceText,4}  "); // pad left 4
                     Cosmetic.SetColor(ConsoleColor.Yellow);
                     Console.WriteLine(Path.GetFileName(dir));
+                    itemCount++;
                 }
 
                 Cosmetic.SetColor(ConsoleColor.Cyan);
 
                 foreach (string file in filesinDirectory)
                 {
+                    PlaceCursor(itemCount);
                     FileInfo fileInfo = new(file);
-                    long size = fileInfo.Length;
-                    int sizeFraction = 1;
-                    if (size > 1024) sizeFraction = 1024;
-                    if (size >= 1024 * 1024) sizeFraction = 1024 * 1024;
-                    if (size >= 1024 * 1024 * 1024) sizeFraction = 1024 * 1024 * 1024;
-                    string sizeDisplay = (size / sizeFraction).ToString();
-                    if (sizeFraction == 1) sizeDisplay += " B ";
-                    if (sizeFraction == 1024) sizeDisplay += " KB";
-                    if (sizeFraction == 1024 * 1024) sizeDisplay += " MB";
-                    if (sizeFraction == 1024 * 1024 * 1024) sizeDisplay += " GB";
+                    string sizeDisplay = FileSizeToText(fileInfo);
                     Console.Write($"{sizeDisplay,10}  ");
                     Cosmetic.SetColor(ConsoleColor.Gray);
                     Console.Write($"{DateAndTimeString(fileInfo.CreationTime)}  ");
                     Cosmetic.SetColorFromAge(fileInfo.LastWriteTime);
-                    Console.Write($"{DateAndTimeString(fileInfo.LastWriteTime)} ");
-                    Console.Write($"{(int)(DateTime.Now - fileInfo.LastWriteTime).TotalDays,4}d  ");
+                    Console.Write($"{DateAndTimeString(fileInfo.LastWriteTime)}  ");
+                    string timeSiceText = TimeSinceToString(fileInfo.LastWriteTime);
+                    Console.Write($"{timeSiceText,4}  "); // pad left 4
                     Cosmetic.SetColor(ConsoleColor.Cyan);
                     Console.WriteLine(Path.GetFileName(file));
+                    itemCount++;
+                }
+
+                if (selectedLine > itemCount - 1)
+                {
+                    selectedLine = itemCount - 1;
+                    parent.updateViewRequested = true;
                 }
             }
             Console.WriteLine();
             Cosmetic.SetColor(ConsoleColor.Cyan);
-            Console.WriteLine($" [Q] Quit  [Esc] Menu  [F] Open File  [D] Open Directory  [F5] Refresh");
+            Console.WriteLine($" [Q] Quit  [Esc] Menu  [Backspace] Parent Directory  [F] Open File  [D] Open Directory  [F5] Refresh");
+        }
+
+        void PlaceCursor(int lineNumber)
+        {
+            if (lineNumber == selectedLine)
+            {
+                Console.Write(">");
+            }
+            else
+            {
+                Console.Write(".");
+            }
+        }
+
+        private static string FileSizeToText(FileInfo fileInfo)
+        {
+            long size = fileInfo.Length;
+            int sizeFraction = 1;
+            if (size > 1024) sizeFraction = 1024;
+            if (size >= 1024 * 1024) sizeFraction = 1024 * 1024;
+            if (size >= 1024 * 1024 * 1024) sizeFraction = 1024 * 1024 * 1024;
+            string sizeDisplay = (size / sizeFraction).ToString();
+            if (sizeFraction == 1) sizeDisplay += " B ";
+            if (sizeFraction == 1024) sizeDisplay += " KB";
+            if (sizeFraction == 1024 * 1024) sizeDisplay += " MB";
+            if (sizeFraction == 1024 * 1024 * 1024) sizeDisplay += " GB";
+            return sizeDisplay;
+        }
+
+        private static string TimeSinceToString(DateTime time)
+        {
+            string timeSiceText;
+            TimeSpan timeSince = DateTime.Now - time;
+            if (timeSince.TotalDays >= 365)
+            {
+                timeSiceText = $"{(int)(timeSince.TotalDays/365)}y";
+            }
+            else if (timeSince.TotalDays >= 1)
+            {
+                timeSiceText = $"{(int)(timeSince.TotalDays)}d";
+            }
+            else if (timeSince.TotalHours >= 1)
+            {
+                timeSiceText = $"{(int)(timeSince.TotalHours)}h";
+            }
+            else
+            {
+                timeSiceText = $"{(int)(timeSince.TotalMinutes)}m";
+            }
+
+            return timeSiceText;
+        }
+
+        public void HandleDirectoryViewKeys(ConsoleKeyInfo keyInput)
+        {
+            if (keyInput.Key == ConsoleKey.DownArrow)
+            {
+                selectedLine++;
+            }
+            else if (keyInput.Key >= ConsoleKey.UpArrow)
+            {
+                selectedLine--;
+                if (selectedLine < 0)
+                {
+                    selectedLine = 0;
+                }
+            }
+            else if (keyInput.Key == ConsoleKey.Enter)
+            {
+                Debug.WriteLine($"Open selected item {selectedLine}");
+                if (selectedLine < subDirectories.Length)
+                {
+                    parent.monitorDirectory = subDirectories[selectedLine];
+                    parent.interfaceMode = InterfaceMode.DirectoryView;
+                    parent.SetupWatcher(parent.monitorDirectory, null);
+                    selectedLine = 0;
+                }
+                else
+                {
+                    int index = selectedLine - subDirectories.Length;
+                    parent.monitorTextFile = filesinDirectory[index];
+                    parent.monitorDirectory = Path.GetDirectoryName(parent.monitorTextFile);
+                    parent.interfaceMode = InterfaceMode.FileView;
+                    parent.SetupWatcher(parent.monitorDirectory, parent.monitorTextFile);
+                    selectedLine = 0;
+                }
+            }
+            else if (keyInput.Key == ConsoleKey.Backspace)
+            {
+                Debug.WriteLine($"Changing to parent directory from {parent.monitorDirectory}");
+                parent.monitorDirectory = Path.GetDirectoryName(parent.monitorDirectory); // parent directory
+                Debug.WriteLine($"                               to {parent.monitorDirectory}");
+                parent.interfaceMode = InterfaceMode.DirectoryView;
+                parent.SetupWatcher(parent.monitorDirectory, null);
+                selectedLine = 0;
+            }
         }
     }
 }

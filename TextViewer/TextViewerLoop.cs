@@ -43,7 +43,7 @@ namespace TextViewer
         }
         internal InterfaceMode interfaceMode = InterfaceMode.MainMenu;
 
-        internal void Update()
+        internal void Start()
         {
             int oldBufferWidth = Console.BufferWidth;
             int oldBufferHeight = Console.BufferHeight;
@@ -141,6 +141,10 @@ namespace TextViewer
                     {
                         fileView.HandleFileViewKeys(keyInput);
                     }
+                    else if (interfaceMode == InterfaceMode.DirectoryView)
+                    {
+                        directoryView.HandleDirectoryViewKeys(keyInput);
+                    }
 
                     UpdateView();
                     lastViewUpdate = DateTime.Now;
@@ -208,13 +212,18 @@ namespace TextViewer
 
         internal void SetupWatcher(string? directory, string? filePath)
         {
+            Debug.WriteLine($"SetupWatcher start, dir:{directory}, filePath:{filePath}");
             string fullpath;
             string folder;
             string filter;
 
             if (filePath is null || filePath == "")
             {
-                if (directory is null) return;
+                if (directory is null)
+                {
+                    Debug.WriteLine("file is empty or null, and directory is null, return");
+                    return;
+                }
                 if (directory == "") directory = ".";
                 fullpath = Path.GetFullPath(directory);
                 folder = fullpath;

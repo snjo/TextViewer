@@ -64,6 +64,11 @@ namespace TextViewer
                     Debug.WriteLine($"line selected: {gotoLine}, scroll set to: {scrollLine}. Lines length: {lines.Length}, max: {max}");
                 }
             }
+            else if (keyInput.Key == ConsoleKey.Backspace)
+            {
+                parent.interfaceMode = InterfaceMode.DirectoryView;
+                parent.SetupWatcher(parent.monitorDirectory, null);
+            }
         }
 
         internal void UpdateFileView()
@@ -129,7 +134,7 @@ namespace TextViewer
                 }
             }
             Console.WriteLine($"┗━━━━━━┻".PadRight(Console.BufferWidth - 1, '━') + "┛");
-            Console.WriteLine($" [Q] Quit  [Esc] Menu  [L] Select Line  [Arrows] scroll  [PgUp/PgDn or Shift+Arrow] scroll 10   [F5] Refresh");
+            Console.WriteLine($" [Esc] Menu  [Backspace] Parent Dir.  [L] Goto Line  [Arrows] scroll  [PgUp/PgDn] scroll 10  [F5] Refresh");
         }
 
         private static void PrintTextLine(string line, string lineNumber, ConsoleColor TitleFG, ConsoleColor TitleBG, ConsoleColor TextFG, ConsoleColor TextBG)
@@ -152,6 +157,7 @@ namespace TextViewer
 
         internal bool LoadFile(string? filePath, bool showError, bool initWatcher = true)
         {
+            scrollLine = 0;
             if (filePath is not null)
             {
                 //if (File.Exists(filePath))
@@ -208,6 +214,8 @@ namespace TextViewer
             string fileSelect = Console.ReadLine() + "";
 
             Debug.WriteLine($"File selected {fileSelect}");
+            fileSelect = Path.GetFullPath(fileSelect);
+            Debug.WriteLine($"Full path: {fileSelect}");
 
             if (fileSelect is not null && File.Exists(fileSelect))
             {
@@ -231,6 +239,7 @@ namespace TextViewer
             {
                 Debug.WriteLine("Load file succeeded");
                 parent.monitorTextFile = fileSelect;
+                parent.monitorDirectory = Path.GetDirectoryName(fileSelect);
                 parent.interfaceMode = InterfaceMode.FileView;
             }
             else
