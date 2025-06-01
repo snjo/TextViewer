@@ -99,6 +99,12 @@ namespace TextViewer
                 int itemCount = 0;
                 //int topMargin = 3;
 
+                if (subDirectories.Length == 0 && filesinDirectory.Length == 0)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine(" Directory is empty.");
+                }
+
                 foreach (string dir in subDirectories)
                 {
                     PlaceCursor(itemCount);
@@ -143,7 +149,7 @@ namespace TextViewer
             }
             Console.WriteLine();
             Cosmetic.SetColor(ConsoleColor.Cyan);
-            Console.WriteLine($" [Q] Quit  [Esc] Menu  [Backspace] Parent Directory  [F] Open File  [D] Open Directory  [F5] Refresh");
+            Console.WriteLine($" [Esc] Menu  [Enter] Open selected  [Backspace] Parent Dir.  [F] Open File  [D] Open Directory  [F5] Refresh");
         }
 
         void PlaceCursor(int lineNumber)
@@ -223,11 +229,13 @@ namespace TextViewer
                 }
                 else
                 {
+
                     int index = selectedLine - subDirectories.Length;
                     parent.monitorTextFile = filesinDirectory[index];
                     parent.monitorDirectory = Path.GetDirectoryName(parent.monitorTextFile);
+                    parent.fileView.LoadFile(parent.monitorTextFile, true, true);
                     parent.interfaceMode = InterfaceMode.FileView;
-                    parent.SetupWatcher(parent.monitorDirectory, parent.monitorTextFile);
+                    parent.fileView.scrollLine = 0;
                     selectedLine = 0;
                 }
             }

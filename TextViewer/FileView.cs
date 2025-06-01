@@ -11,7 +11,7 @@ namespace TextViewer
     internal class FileView (TextViewerLoop parent)
     {
         internal string[] lines = [];
-        private int scrollLine = 0;
+        internal int scrollLine = 0;
         public bool forceFileUpdate = false;
         public int fileUpdateCountdown = -1;
         internal DateTime lastFileUpdate = DateTime.MinValue;
@@ -157,6 +157,7 @@ namespace TextViewer
 
         internal bool LoadFile(string? filePath, bool showError, bool initWatcher = true)
         {
+            Debug.WriteLine($"Loading file: {filePath} showError: {showError} init: {initWatcher}");
             scrollLine = 0;
             if (filePath is not null)
             {
@@ -185,6 +186,7 @@ namespace TextViewer
                 }
                 catch (Exception ex)
                 {
+                    Debug.WriteLine($" Exception when opening file: {filePath}");
                     Cosmetic.SetColor(ConsoleColor.Red);
                     Console.WriteLine($" Error opening file!");
                     Console.WriteLine($" {ex.Message}");
@@ -197,6 +199,7 @@ namespace TextViewer
             else if (showError)
             {
                 Cosmetic.SetColor(ConsoleColor.Red);
+                Debug.WriteLine($" File not found: {filePath}");
                 Console.WriteLine($" File not found:");
                 Console.WriteLine(" " + filePath);
                 Console.ReadKey();

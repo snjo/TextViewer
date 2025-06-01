@@ -9,8 +9,8 @@ namespace TextViewer
 {
     public class TextViewerLoop
     {
-        readonly FileView fileView;
-        readonly DirectoryView directoryView;
+        internal readonly FileView fileView;
+        internal readonly DirectoryView directoryView;
         readonly string[] arguments;
 
         public TextViewerLoop(string[] args)
