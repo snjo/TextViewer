@@ -10,7 +10,7 @@ namespace TextViewer
     public class TextScroller
     {
         private int _height = 20;
-        public int Height
+        public int Height // height of the lines + scroll overflow arrows is present
         {
             get
             {
@@ -28,9 +28,9 @@ namespace TextViewer
                 }
                 _height = value;
             }
-        }// heighte of the lines + scroll overflow arrows is present
+        }
         private int _pageHeight = 18;
-        public int PageHeight
+        public int PageHeight // height of the lines inside the scroll area (height - overflow scroll arrows)
         {
             get
             {
@@ -76,26 +76,6 @@ namespace TextViewer
             currentLineNumber = 0;
             currentLineBuilder.Clear();
         }
-
-        //public void Write(string text, bool endLine)
-        //{
-        //    if (currentLineNumber + scrollPosition < lineCount)
-        //    {
-        //        Console.Write(text);
-        //        if (endLine)
-        //        {
-        //            Console.WriteLine();
-        //            currentLineBuilder.Clear();
-        //            currentLineNumber++;
-        //        }
-        //        Debug.WriteLine($"    Outputting line, currentLineNumber {currentLineNumber}, scroll:{scrollPosition}, lineCount{lineCount}");
-        //    }
-        //    else
-        //    {
-        //        Debug.WriteLine($"Not outputting line, currentLineNumber {currentLineNumber}, scroll:{scrollPosition}, lineCount{lineCount}");
-        //    }
-
-        //}
 
         public void WriteLineFromBuilder()
         {
@@ -150,9 +130,6 @@ namespace TextViewer
             }
             lineCount = lines.Count;
 
-            int usableHeight = Height;
-            if (ShowOverflowArrows) usableHeight -= 2;
-
             if (ShowOverflowArrows && scrollPosition > 0)
             {
                 Console.WriteLine(" ⮝ ⮝ ⮝ ⮝ ⮝ ⮝ ");
@@ -162,12 +139,12 @@ namespace TextViewer
                 Console.WriteLine();
             }
 
-            for (int i = scrollPosition; i < lines.Count && i < scrollPosition + usableHeight; i++)
+            for (int i = scrollPosition; i < lines.Count && i < scrollPosition + PageHeight; i++)
             {
                Console.WriteLine(Lines[i]);
             }
 
-            if (ShowOverflowArrows && scrollPosition + usableHeight < lines.Count)
+            if (ShowOverflowArrows && scrollPosition + PageHeight < lines.Count)
             {
                 Console.WriteLine(" ⮟ ⮟ ⮟ ⮟ ⮟ ⮟ ");
             }

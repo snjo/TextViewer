@@ -67,12 +67,10 @@ namespace TextViewer
             else if (keyInput.Key == ConsoleKey.PageDown || (keyInput.Key == ConsoleKey.DownArrow && keyInput.Modifiers == ConsoleModifiers.Shift))
             {
                 scroller.changeScroll(pageScroll);
-                Debug.WriteLine($"page scroll: {pageScroll}");
             }
             else if (keyInput.Key == ConsoleKey.PageUp || (keyInput.Key == ConsoleKey.UpArrow && keyInput.Modifiers == ConsoleModifiers.Shift))
             {
                 scroller.changeScroll(-pageScroll);
-                Debug.WriteLine($"page scroll: {pageScroll}");
             }
             else if (keyInput.Key == ConsoleKey.DownArrow)
             {
@@ -85,12 +83,10 @@ namespace TextViewer
             else if (keyInput.Key == ConsoleKey.End)
             {
                 scroller.ScrollToEnd();
-                //scroll = parent.changeLog.Count - 1;
             }
             else if (keyInput.Key == ConsoleKey.Home)
             {
                 scroller.ScrollToBeginning();
-                //scroll = 0;
             }
 
         }
