@@ -149,18 +149,18 @@ namespace TextViewer
             }
             Console.WriteLine();
             Cosmetic.SetColor(ConsoleColor.Cyan);
-            Console.WriteLine($" [Esc] Menu  [Enter] Open selected  [Backspace] Parent Dir.  [F] Open File  [D] Open Directory  [F5] Refresh");
+            Console.WriteLine($" [Esc] Menu  [Enter] Open  [Backspace] Parent Dir.  [F] File  [D] Directory  [F5] Refresh  [E] Log");
         }
 
         void PlaceCursor(int lineNumber)
         {
             if (lineNumber == selectedLine)
             {
-                Console.Write(">");
+                Console.Write("🢂");
             }
             else
             {
-                Console.Write(".");
+                Console.Write(" ");
             }
         }
 

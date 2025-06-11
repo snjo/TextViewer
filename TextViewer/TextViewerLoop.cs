@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,6 +13,7 @@ namespace TextViewer
     {
         internal readonly FileView fileView;
         internal readonly DirectoryView directoryView;
+        internal readonly EventLogView eventLogView;
         readonly string[] arguments;
 
         public TextViewerLoop(string[] args)
@@ -18,18 +21,28 @@ namespace TextViewer
             arguments = args;
             fileView = new(this);
             directoryView = new(this);
+            eventLogView = new(this);
         }
 
         private readonly ConsoleColor defaultForeColor = Console.ForegroundColor;
         private readonly ConsoleColor defaultBackColor = Console.BackgroundColor;
-        
+
         internal string? monitorTextFile = null;
         internal string? monitorDirectory = null;
         internal string monitorFilter = "*.*";
         internal bool updateViewRequested = true;
         internal FileSystemWatcher? watcher;
 
-
+        internal bool alertWhenDirectoryChanged = false;
+        internal bool alertWhenFileChanged = false;
+        //WatcherChangeTypes changeType = WatcherChangeTypes.All;
+        bool alertChangeTypeAll = false;
+        bool alertChangeTypeCreated = true;
+        bool alertChangeTypeChanged = true;
+        bool alertChangeTypeDeleted = true;
+        bool alertChangeTypeRenamed = true;
+        //internal StringBuilder changeLog = new();
+        internal List<WatcherLogEntry> changeLog = new();
 
         internal enum InterfaceMode
         {
@@ -39,9 +52,11 @@ namespace TextViewer
             SelectFile,
             SelectDirectory,
             Help,
+            EventLog,
             END
         }
         internal InterfaceMode interfaceMode = InterfaceMode.MainMenu;
+        internal InterfaceMode previousInterfaceMode = InterfaceMode.MainMenu;
 
         internal void Start()
         {
@@ -137,6 +152,11 @@ namespace TextViewer
                     {
                         interfaceMode = InterfaceMode.Help;
                     }
+                    else if (keyInput.Key == ConsoleKey.E)
+                    {
+                        previousInterfaceMode = interfaceMode;
+                        interfaceMode = InterfaceMode.EventLog;
+                    }
                     else if (interfaceMode == InterfaceMode.FileView)
                     {
                         fileView.HandleFileViewKeys(keyInput);
@@ -145,8 +165,12 @@ namespace TextViewer
                     {
                         directoryView.HandleDirectoryViewKeys(keyInput);
                     }
+                    else if (interfaceMode == InterfaceMode.EventLog)
+                    {
+                        eventLogView.HandleEventLogViewKeys(keyInput);
+                    }
 
-                    UpdateView();
+                        UpdateView();
                     lastViewUpdate = DateTime.Now;
                 }
                 else
@@ -155,6 +179,21 @@ namespace TextViewer
                 }
             }
 
+        }
+
+        bool checkAlertType(WatcherChangeTypes alertType)
+        {
+            if (alertChangeTypeAll && alertType == WatcherChangeTypes.All)
+                return true;
+            if (alertChangeTypeCreated && alertType == WatcherChangeTypes.Created)
+                return true;
+            if (alertChangeTypeChanged && alertType == WatcherChangeTypes.Changed)
+                return true;
+            if (alertChangeTypeDeleted && alertType == WatcherChangeTypes.Deleted)
+                return true;
+            if (alertChangeTypeRenamed && alertType == WatcherChangeTypes.Renamed)
+                return true;
+            return false;
         }
 
         public void ParseArguments(string[] arguments)
@@ -212,6 +251,15 @@ namespace TextViewer
 
         internal void SetupWatcher(string? directory, string? filePath)
         {
+            if (filePath != null)
+            {
+                changeLog.Add(new WatcherLogEntry(WatcherLogEntry.EntryType.WatcherConfig, DateTime.Now, filePath, null, "File"));
+            }
+            else if(directory != null)
+            {
+                changeLog.Add(new WatcherLogEntry(WatcherLogEntry.EntryType.WatcherConfig, DateTime.Now, directory, null, "Directory"));
+            }
+
             Debug.WriteLine($"SetupWatcher start, dir:{directory}, filePath:{filePath}");
             string fullpath;
             string folder;
@@ -257,8 +305,6 @@ namespace TextViewer
             watcher.Renamed += Watcher_OnChanged;
             watcher.Error += Watcher_OnError;
 
-
-
             //watcher.NotifyFilter = NotifyFilters.LastWrite;
 
             watcher.EnableRaisingEvents = true;
@@ -289,6 +335,10 @@ namespace TextViewer
             {
                 directoryView.OpenDirectoryDialog();
             }
+            else if (interfaceMode == InterfaceMode.EventLog)
+            {
+                eventLogView.UpdateEvenLogView();
+            }
             else if (interfaceMode == InterfaceMode.Help)
             {
                 Cosmetic.SetColor(ConsoleColor.White, ConsoleColor.Black);
@@ -313,10 +363,40 @@ namespace TextViewer
             return $"{date.ToShortDateString()} {date.ToShortTimeString()}";
         }
 
+        string lastLogMessage = "";
+        DateTime lastDing = DateTime.MinValue;
+
         private void Watcher_OnChanged(object sender, FileSystemEventArgs e)
         {
             Debug.WriteLine($"File changed at {DateTime.Now.ToShortTimeString()}");
             Debug.WriteLine($"   {((FileSystemWatcher)sender).Path} : {e.ChangeType} {e.Name}");
+
+            //bool changeIsDirectory = false;
+            WatcherLogEntry.EntryType entryType = WatcherLogEntry.EntryType.FileEvent;
+
+            if (Directory.Exists(e.FullPath))
+            {
+                //changeIsDirectory = true;
+                entryType = WatcherLogEntry.EntryType.DirectoryEvent;
+            }
+
+            string logMessage = $"{DateTime.Now.ToShortDateString()} {DateTime.Now.ToLongTimeString()}: {e.ChangeType}, {e.Name}";
+            if (logMessage != lastLogMessage) // deduplicate identical messages from spammy watcher
+            {
+                //changeLog.AppendLine(logMessage);
+                changeLog.Add(new WatcherLogEntry(entryType, DateTime.Now, e.FullPath, e.ChangeType));
+                Debug.WriteLine($"Change type: {entryType.ToString()} : {e.FullPath}");
+            }
+            lastLogMessage = logMessage;
+
+            if ((entryType == WatcherLogEntry.EntryType.DirectoryEvent && alertWhenDirectoryChanged) || (entryType == WatcherLogEntry.EntryType.FileEvent && alertWhenFileChanged))
+            {
+                if (checkAlertType(e.ChangeType) && DateTime.Now - lastDing > TimeSpan.FromSeconds(5)) // check if user wants ding for this type, and prevent dinging too often.
+                {
+                    Console.Write("\a"); // ding bell
+                    lastDing = DateTime.Now;
+                }
+            }
 
             fileView.fileUpdateCountdown = 10; // wait a bit before opening the file, it might still be held by the save process. Prevents double triggering of file load if watcher event fires twice
         }

@@ -134,7 +134,7 @@ namespace TextViewer
                 }
             }
             Console.WriteLine($"┗━━━━━━┻".PadRight(Console.BufferWidth - 1, '━') + "┛");
-            Console.WriteLine($" [Esc] Menu  [Backspace] Parent Dir.  [L] Goto Line  [Arrows] scroll  [PgUp/PgDn] scroll 10  [F5] Refresh");
+            Console.WriteLine($" [Esc] Menu  [Backspace] Parent Dir.  [L] Goto Line  [↓↑] scroll  [PgUp PgDn Shift+↓↑] scroll 10  [F5] Refresh  [E] Log");
         }
 
         private static void PrintTextLine(string line, string lineNumber, ConsoleColor TitleFG, ConsoleColor TitleBG, ConsoleColor TextFG, ConsoleColor TextBG)
@@ -215,6 +215,10 @@ namespace TextViewer
             Cosmetic.SetColor(ConsoleColor.Yellow);
             Console.Write(" File: ");
             string fileSelect = Console.ReadLine() + "";
+            if (fileSelect == "")
+            {
+                return;
+            }
 
             Debug.WriteLine($"File selected {fileSelect}");
             fileSelect = Path.GetFullPath(fileSelect);
