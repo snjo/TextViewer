@@ -170,8 +170,9 @@ namespace TextViewer
                         eventLogView.HandleEventLogViewKeys(keyInput);
                     }
 
-                        UpdateView();
+                    UpdateView();
                     lastViewUpdate = DateTime.Now;
+                    Console.ResetColor();
                 }
                 else
                 {

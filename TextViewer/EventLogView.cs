@@ -11,6 +11,7 @@ namespace TextViewer
     class EventLogView (TextViewerLoop parent)
     {
         int scroll = 0;
+        TextScroller scroller = new();
 
         internal void UpdateEvenLogView()
         {
@@ -24,28 +25,30 @@ namespace TextViewer
             string dingFile = parent.alertWhenFileChanged ? "🔔 File" : "🔕 File";
             Cosmetic.ShowTitleBar($"Event Log : {directory}".PadRight(Console.BufferWidth-25) + $"{dingDir}  {dingFile}");
             //Console.WriteLine(parent.changeLog.ToString());
-            if (scroll > 0)
-            {
-                Console.WriteLine(" ⮝ ⮝ ⮝ ⮝ ⮝ ⮝ ");
-            }
-            int count = 0;
-            for (int i = scroll; i < parent.changeLog.Count && i < Console.BufferHeight + scroll - 6; i++)
-            {
-                WatcherLogEntry entry = parent.changeLog[i];
-                Console.WriteLine($"{entry.time.ToShortDateString()} {entry.time.ToLongTimeString()}, {entry.entryType,-10}: {entry.info} {entry.watcherChangeType} {entry.path}");
-                count = i;
-            }
-            if (count < parent.changeLog.Count-1)
-            {
-                Console.WriteLine(" ⮟ ⮟ ⮟ ⮟ ⮟ ⮟ ");
-            }
+            Console.WriteLine("Date".PadRight(12) + "Time".PadRight(10) + "Entry type".PadRight(16) + "Information".PadRight(16) + "Change type".PadRight(16) + "Path" );
+
+            scroller.Height = Console.BufferHeight - 6;
+            AssembleScrollableText();
+            scroller.OutputLines(null);
+
             Console.WriteLine("");
             Console.WriteLine(" [Esc] Menu  [Backspace] Return to previous screen  [B] Toggle Bell ding  [↓↑] scroll [PgUp PgDn Shift+↓↑] scroll 10");
         }
 
+        private void AssembleScrollableText()
+        {
+            scroller.ResetLines();
+            foreach (WatcherLogEntry entry in parent.changeLog)
+            {
+                scroller.AddTextToLine($"{TerminalCodes.ForegroundBlue}{entry.time.ToShortDateString(),-12}{entry.time.ToLongTimeString(),-10}");
+                scroller.AddTextToLine($"{TerminalCodes.ForegroundCyan}{entry.entryType,-16}{entry.info,-16}");
+                scroller.FinishLine($"{TerminalCodes.RGBtoForeground(100,80,50)}{entry.watcherChangeType,-16} {TerminalCodes.ForegroundWhite}{entry.path}", true);
+            }
+        }
+
         internal void HandleEventLogViewKeys(ConsoleKeyInfo keyInput)
         {
-            int pageScroll = Math.Max(10, Console.BufferHeight - 6);
+            int pageScroll = scroller.PageHeight;//Math.Max(10, Console.BufferHeight - 6);
 
             if (keyInput.Key == ConsoleKey.Backspace)
             {
@@ -59,33 +62,35 @@ namespace TextViewer
             else if (keyInput.Key == ConsoleKey.J)
             {
                 // test log entries
-                parent.changeLog.Add(new WatcherLogEntry(WatcherLogEntry.EntryType.Information, DateTime.Now, "", null, "test enry" + DateTime.Now.Microsecond));
+                parent.changeLog.Add(new WatcherLogEntry(WatcherLogEntry.EntryType.Information, DateTime.Now, "No file", WatcherChangeTypes.All, "test enry" + DateTime.Now.Microsecond));
             }
             else if (keyInput.Key == ConsoleKey.PageDown || (keyInput.Key == ConsoleKey.DownArrow && keyInput.Modifiers == ConsoleModifiers.Shift))
             {
-                AddToScroll(pageScroll);
+                scroller.changeScroll(pageScroll);
                 Debug.WriteLine($"page scroll: {pageScroll}");
             }
             else if (keyInput.Key == ConsoleKey.PageUp || (keyInput.Key == ConsoleKey.UpArrow && keyInput.Modifiers == ConsoleModifiers.Shift))
             {
-                AddToScroll(-pageScroll);
+                scroller.changeScroll(-pageScroll);
                 Debug.WriteLine($"page scroll: {pageScroll}");
             }
             else if (keyInput.Key == ConsoleKey.DownArrow)
             {
-                AddToScroll(1);
+                scroller.changeScroll(1);
             }
             else if (keyInput.Key == ConsoleKey.UpArrow)
             {
-                AddToScroll(-1);
+                scroller.changeScroll(-1);
             }
             else if (keyInput.Key == ConsoleKey.End)
             {
-                scroll = parent.changeLog.Count - 1;
+                scroller.ScrollToEnd();
+                //scroll = parent.changeLog.Count - 1;
             }
             else if (keyInput.Key == ConsoleKey.Home)
             {
-                scroll = 0;
+                scroller.ScrollToBeginning();
+                //scroll = 0;
             }
 
         }

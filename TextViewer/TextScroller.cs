@@ -9,14 +9,43 @@ namespace TextViewer
 {
     public class TextScroller
     {
-        public int Height = 20;
+        private int _height = 20;
+        public int Height
+        {
+            get
+            {
+                return _height;
+            }
+            set
+            {
+                if (ShowOverflowArrows)
+                {
+                    _pageHeight = value - 2;
+                }
+                else
+                {
+                    _pageHeight = value;
+                }
+                _height = value;
+            }
+        }// heighte of the lines + scroll overflow arrows is present
+        private int _pageHeight = 18;
+        public int PageHeight
+        {
+            get
+            {
+                return _pageHeight;
+            }
+        }
         public int scrollPosition = 0;
         public int visibleBottomLines = 5;
+        public bool ShowOverflowArrows = true;
         int currentLineNumber = 0;
 
         public int lineCount = 0;
 
         StringBuilder currentLineBuilder = new();
+        private List<string> Lines = [];
 
         public int changeScroll(int change)
         {
@@ -32,46 +61,71 @@ namespace TextViewer
             return scrollPosition;
         }
 
+        public void ScrollToBeginning()
+        {
+            scrollPosition = 0;
+        }
+
+        public void ScrollToEnd()
+        {
+            scrollPosition = lineCount - visibleBottomLines;
+        }
+
         public void Reset()
         {
             currentLineNumber = 0;
             currentLineBuilder.Clear();
         }
 
-        public void Write(string text, bool endLine)
-        {
-            if (currentLineNumber + scrollPosition < lineCount)
-            {
-                Console.Write(text);
-                if (endLine)
-                {
-                    Console.WriteLine();
-                    currentLineBuilder.Clear();
-                    currentLineNumber++;
-                }
-                Debug.WriteLine($"    Outputting line, currentLineNumber {currentLineNumber}, scroll:{scrollPosition}, lineCount{lineCount}");
-            }
-            else
-            {
-                Debug.WriteLine($"Not outputting line, currentLineNumber {currentLineNumber}, scroll:{scrollPosition}, lineCount{lineCount}");
-            }
+        //public void Write(string text, bool endLine)
+        //{
+        //    if (currentLineNumber + scrollPosition < lineCount)
+        //    {
+        //        Console.Write(text);
+        //        if (endLine)
+        //        {
+        //            Console.WriteLine();
+        //            currentLineBuilder.Clear();
+        //            currentLineNumber++;
+        //        }
+        //        Debug.WriteLine($"    Outputting line, currentLineNumber {currentLineNumber}, scroll:{scrollPosition}, lineCount{lineCount}");
+        //    }
+        //    else
+        //    {
+        //        Debug.WriteLine($"Not outputting line, currentLineNumber {currentLineNumber}, scroll:{scrollPosition}, lineCount{lineCount}");
+        //    }
 
-        }
+        //}
 
         public void WriteLineFromBuilder()
         {
-
             currentLineNumber++;
         }
 
-        public void AddWordsToBuilder(string text)
+        public void ResetLines()
+        {
+            Lines.Clear();
+            lineCount = 0;
+        }
+
+        public void AddTextToLine(string text)
         {
             currentLineBuilder.Append(text);
         }
 
-        public void AddLineToBuilder(string text)
+        public void FinishLine(string text, bool addToBeginning = false)
         {
-            currentLineBuilder.AppendLine(text);
+            currentLineBuilder.Append(text);
+            if (addToBeginning)
+            {
+                Lines.Insert(0,currentLineBuilder.ToString());
+            }
+            else
+            {
+                Lines.Add(currentLineBuilder.ToString());
+            }
+            currentLineBuilder.Clear();
+            lineCount = Lines.Count;
         }
 
         public void SetColorInBuilder(ConsoleColor color, bool background = false)
@@ -83,33 +137,43 @@ namespace TextViewer
             currentLineBuilder.Append(colorCode);
         }
 
-        public string GetTerminalSequenceForeground(ConsoleColor color)
+        public List<string> GetLines()
         {
-            // https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences
-            // ESC [ <n> m	SGR	Set Graphics Rendition	Set the format of the screen and text as specified by <n>
-            switch (color)
+            return Lines;
+        }
+
+        public void OutputLines(List<string>? lines)
+        {
+            if (lines == null)
             {
-                case ConsoleColor.Black:
-                    return "\x1b[30m";
-                case ConsoleColor.Red:
-                    return "\x1b[31m";
+                lines = Lines;
+            }
+            lineCount = lines.Count;
 
-                case ConsoleColor.Green:
-                    return "\x1b[31m";
-                case ConsoleColor.Yellow:
-                    return "\x1b[31m";
-                case ConsoleColor.Blue:
-                    return "\x1b[31m";
-                case ConsoleColor.Magenta:
-                    return "\x1b[31m";
-                case ConsoleColor.Cyan:
-                    return "\x1b[31m";
-                case ConsoleColor.White:
-                    return "\x1b[31m";
+            int usableHeight = Height;
+            if (ShowOverflowArrows) usableHeight -= 2;
 
+            if (ShowOverflowArrows && scrollPosition > 0)
+            {
+                Console.WriteLine(" ⮝ ⮝ ⮝ ⮝ ⮝ ⮝ ");
+            }
+            else
+            {
+                Console.WriteLine();
+            }
 
-                default:
-                    return "";
+            for (int i = scrollPosition; i < lines.Count && i < scrollPosition + usableHeight; i++)
+            {
+               Console.WriteLine(Lines[i]);
+            }
+
+            if (ShowOverflowArrows && scrollPosition + usableHeight < lines.Count)
+            {
+                Console.WriteLine(" ⮟ ⮟ ⮟ ⮟ ⮟ ⮟ ");
+            }
+            else
+            {
+                Console.WriteLine();
             }
             
         }

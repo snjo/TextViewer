@@ -14,6 +14,7 @@ class Program
 {
     static void Main(string[] args)
     {
+        Console.ResetColor();
         //string argfull = Environment.CommandLine;
         //Console.WriteLine(argfull);
         //Console.ReadLine();
