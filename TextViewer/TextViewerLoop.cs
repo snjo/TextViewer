@@ -308,7 +308,24 @@ namespace TextViewer
 
             //watcher.NotifyFilter = NotifyFilters.LastWrite;
 
-            watcher.EnableRaisingEvents = true;
+            try
+            {
+                watcher.EnableRaisingEvents = true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Exception opening item:\n{ex.Message}");
+                Console.ResetColor();
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Clear();
+                Console.WriteLine($"Exception opening item:\n{ex.Message}\n\nPress any key to continue.");
+                Console.ResetColor();
+                Console.ReadKey();
+                watcher.Dispose();
+                watcher = null;
+                monitorDirectory = null;
+                monitorTextFile = null;
+            }
             //watcher.Filter = "*.*";
             Debug.WriteLine($"Watcher setup complete: {watcher is not null}, {watcher?.Path} {watcher?.Filter}");
         }

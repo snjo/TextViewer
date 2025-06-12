@@ -84,9 +84,13 @@ namespace TextViewer
             currentLineBuilder.Clear();
         }
 
-        public void ResetLines()
+        public void ResetLines(bool resetScroll = false)
         {
             Lines.Clear();
+            if (resetScroll)
+            {
+                scrollPosition = 0;
+            }
         }
 
         public void AddTextToLine(string text)
@@ -113,7 +117,7 @@ namespace TextViewer
             return currentLineBuilder.ToString();
         }
 
-        public void SetColorInBuilder(Color color, bool background = false)
+        public void SetColor(Color color, bool background = false)
         {
             string colorCode = "";
             if (background)

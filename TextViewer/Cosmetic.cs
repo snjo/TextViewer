@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Drawing;
 
 namespace TextViewer
 {
@@ -13,6 +14,47 @@ namespace TextViewer
             Console.ForegroundColor = foreground;
             if (background is not null)
                 Console.BackgroundColor = (ConsoleColor)background;
+        }
+
+        public static Color GetColorFromAge(DateTime time)
+        {
+            TimeSpan timeSinceFileWrite = DateTime.Now - time;
+
+            TimeSpan JustHappened = TimeSpan.FromMinutes(2);
+            TimeSpan MinutesAgo = TimeSpan.FromMinutes(15);
+            TimeSpan HourAgo = TimeSpan.FromHours(1);
+            TimeSpan DayAgo = TimeSpan.FromDays(1);
+            TimeSpan WeekAgo = TimeSpan.FromDays(7);
+            TimeSpan MonthAgo = TimeSpan.FromDays(30);
+
+            if (timeSinceFileWrite < JustHappened)
+            {
+                return Color.Yellow;
+            }
+            else if (timeSinceFileWrite < MinutesAgo)
+            {
+                return Color.GreenYellow;
+            }
+            else if (timeSinceFileWrite < HourAgo)
+            {
+                return Color.Green;
+            }
+            else if (timeSinceFileWrite < DayAgo)
+            {
+               return Color.Blue;
+            }
+            else if (timeSinceFileWrite < WeekAgo)
+            {
+                return Color.Magenta;
+            }
+            else if (timeSinceFileWrite < MonthAgo)
+            {
+                return Color.Purple;
+            }
+            else
+            {
+                return Color.DarkGray;
+            }
         }
 
         public static void SetColorFromAge(DateTime time)

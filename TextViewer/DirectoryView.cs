@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime;
 using System.Text;
 using System.Threading.Tasks;
+using System.Drawing;
 using static TextViewer.TextViewerLoop;
 
 namespace TextViewer
@@ -14,6 +15,7 @@ namespace TextViewer
         int selectedLine = 0;
         string[] subDirectories = [];
         string[] filesinDirectory = [];
+        TextScroller textScroller = new();
 
         internal void OpenDirectoryDialog()
         {
@@ -68,6 +70,11 @@ namespace TextViewer
 
         internal void UpdateDirectoryView()
         {
+            textScroller.visibleBottomLines = 1;
+            textScroller.ResetLines(false);
+            textScroller.ResetLineBuilder();
+            
+
             if (Directory.Exists(parent.monitorDirectory) == false)
             {
                 Console.WriteLine($"Directory does not exist: {parent.monitorDirectory}");
@@ -107,18 +114,18 @@ namespace TextViewer
 
                 foreach (string dir in subDirectories)
                 {
-                    PlaceCursor(itemCount);
-                    Cosmetic.SetColor(ConsoleColor.Yellow);
+                    //PlaceCursor(itemCount);
+                    textScroller.SetColor(Color.Yellow);
                     DirectoryInfo dirInfo = new(dir);
-                    Console.Write($"  <DIR>     ");
-                    Cosmetic.SetColor(ConsoleColor.Gray);
-                    Console.Write($"{TextViewerLoop.DateAndTimeString(dirInfo.CreationTime)}  ");
-                    Cosmetic.SetColorFromAge(dirInfo.LastWriteTime);
-                    Console.Write($"{TextViewerLoop.DateAndTimeString(dirInfo.LastWriteTime)}  ");
+                    textScroller.AddTextToLine($"  <DIR>     ");
+                    textScroller.SetColor(Color.Gray);
+                    textScroller.AddTextToLine($"{TextViewerLoop.DateAndTimeString(dirInfo.CreationTime)}  ");
+                    textScroller.SetColor(Cosmetic.GetColorFromAge(dirInfo.LastWriteTime));
+                    textScroller.AddTextToLine($"{TextViewerLoop.DateAndTimeString(dirInfo.LastWriteTime)}  ");
                     string timeSiceText = TimeSinceToString(dirInfo.LastWriteTime);
-                    Console.Write($"{timeSiceText,4}  "); // pad left 4
-                    Cosmetic.SetColor(ConsoleColor.Yellow);
-                    Console.WriteLine(Path.GetFileName(dir));
+                    textScroller.AddTextToLine($"{timeSiceText,4}  "); // pad left 4
+                    textScroller.SetColor(Color.Yellow);
+                    textScroller.FinishLine(Path.GetFileName(dir));
                     itemCount++;
                 }
 
@@ -126,20 +133,24 @@ namespace TextViewer
 
                 foreach (string file in filesinDirectory)
                 {
-                    PlaceCursor(itemCount);
+                    //PlaceCursor(itemCount);
                     FileInfo fileInfo = new(file);
                     string sizeDisplay = FileSizeToText(fileInfo);
-                    Console.Write($"{sizeDisplay,10}  ");
-                    Cosmetic.SetColor(ConsoleColor.Gray);
-                    Console.Write($"{DateAndTimeString(fileInfo.CreationTime)}  ");
-                    Cosmetic.SetColorFromAge(fileInfo.LastWriteTime);
-                    Console.Write($"{DateAndTimeString(fileInfo.LastWriteTime)}  ");
+                    textScroller.AddTextToLine($"{sizeDisplay,10}  ");
+                    textScroller.SetColor(Color.Gray);
+                    textScroller.AddTextToLine($"{DateAndTimeString(fileInfo.CreationTime)}  ");
+                    textScroller.SetColor(Cosmetic.GetColorFromAge(fileInfo.LastWriteTime));
+                    textScroller.AddTextToLine($"{DateAndTimeString(fileInfo.LastWriteTime)}  ");
                     string timeSiceText = TimeSinceToString(fileInfo.LastWriteTime);
-                    Console.Write($"{timeSiceText,4}  "); // pad left 4
-                    Cosmetic.SetColor(ConsoleColor.Cyan);
-                    Console.WriteLine(Path.GetFileName(file));
+                    textScroller.AddTextToLine($"{timeSiceText,4}  "); // pad left 4
+                    textScroller.SetColor(Color.Cyan);
+                    textScroller.FinishLine(Path.GetFileName(file));
                     itemCount++;
                 }
+
+                Console.SetCursorPosition(0, 3);
+                textScroller.OutputLines(null);
+
 
                 if (selectedLine > itemCount - 1)
                 {
@@ -149,7 +160,11 @@ namespace TextViewer
             }
             Console.WriteLine();
             Cosmetic.SetColor(ConsoleColor.Cyan);
+            int cursorTop = Console.GetCursorPosition().Top;
             Console.WriteLine($" [Esc] Menu  [Enter] Open  [Backspace] Parent Dir.  [F] File  [D] Directory  [F5] Refresh  [E] Log");
+            Console.SetCursorPosition(0, 4);
+            Console.Write("🢂");
+            Console.SetCursorPosition(0, cursorTop);
         }
 
         void PlaceCursor(int lineNumber)
@@ -205,38 +220,51 @@ namespace TextViewer
 
         public void HandleDirectoryViewKeys(ConsoleKeyInfo keyInput)
         {
+            if ((keyInput.Key == ConsoleKey.DownArrow && keyInput.Modifiers == ConsoleModifiers.Shift) || keyInput.Key == ConsoleKey.PageDown)
+            {
+                textScroller.changeScroll(10);
+            }
+            if ((keyInput.Key == ConsoleKey.UpArrow && keyInput.Modifiers == ConsoleModifiers.Shift) || keyInput.Key == ConsoleKey.PageUp)
+            {
+                textScroller.changeScroll(-10);
+            }
+
             if (keyInput.Key == ConsoleKey.DownArrow)
             {
-                selectedLine++;
+                //selectedLine++;
+                textScroller.changeScroll(1);
             }
             else if (keyInput.Key >= ConsoleKey.UpArrow)
             {
-                selectedLine--;
-                if (selectedLine < 0)
-                {
-                    selectedLine = 0;
-                }
+                //selectedLine--;
+                //if (selectedLine < 0)
+                //{
+                //    selectedLine = 0;
+                //}
+                textScroller.changeScroll(-1);
             }
             else if (keyInput.Key == ConsoleKey.Enter)
             {
-                Debug.WriteLine($"Open selected item {selectedLine}");
-                if (selectedLine < subDirectories.Length)
+                int selectedItem = textScroller.scrollPosition;
+                Debug.WriteLine($"Open selected item {selectedItem}");
+                if (selectedItem < subDirectories.Length)
                 {
-                    parent.monitorDirectory = subDirectories[selectedLine];
+                    parent.monitorDirectory = subDirectories[selectedItem];
                     parent.interfaceMode = InterfaceMode.DirectoryView;
                     parent.SetupWatcher(parent.monitorDirectory, null);
-                    selectedLine = 0;
+                    textScroller.scrollPosition = 0;
+                    //selectedItem = 0;
                 }
                 else
                 {
 
-                    int index = selectedLine - subDirectories.Length;
+                    int index = selectedItem - subDirectories.Length;
                     parent.monitorTextFile = filesinDirectory[index];
                     parent.monitorDirectory = Path.GetDirectoryName(parent.monitorTextFile);
                     parent.fileView.LoadFile(parent.monitorTextFile, true, true);
                     parent.interfaceMode = InterfaceMode.FileView;
                     parent.fileView.scrollLine = 0;
-                    selectedLine = 0;
+                    //selectedLine = 0;
                 }
             }
             else if (keyInput.Key == ConsoleKey.Backspace)
@@ -246,7 +274,8 @@ namespace TextViewer
                 Debug.WriteLine($"                               to {parent.monitorDirectory}");
                 parent.interfaceMode = InterfaceMode.DirectoryView;
                 parent.SetupWatcher(parent.monitorDirectory, null);
-                selectedLine = 0;
+                textScroller.scrollPosition = 0;
+                //selectedLine = 0;
             }
         }
     }

@@ -41,11 +41,11 @@ namespace TextViewer
             scroller.ResetLines();
             foreach (WatcherLogEntry entry in parent.changeLog)
             {
-                scroller.SetColorInBuilder(Color.Blue);
+                scroller.SetColor(Color.Blue);
                 scroller.AddTextToLine($"{entry.time.ToShortDateString(),-12}{entry.time.ToLongTimeString(),-10}");
-                scroller.SetColorInBuilder(Color.Cyan);
+                scroller.SetColor(Color.Cyan);
                 scroller.AddTextToLine($"{entry.entryType,-16}{entry.info,-16}");
-                scroller.SetColorInBuilder(Color.LightGreen);
+                scroller.SetColor(Color.LightGreen);
                 scroller.FinishLine($"{entry.watcherChangeType,-16}{TerminalCodes.ForegroundWhite}{entry.path}", true);
             }
         }
