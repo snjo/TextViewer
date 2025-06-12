@@ -70,6 +70,12 @@ namespace TextViewer
 
         internal void UpdateDirectoryView()
         {
+            if (Console.BufferHeight < 10 || Console.BufferWidth < 70)
+            {
+                Console.WriteLine("Console height or width too low, please expand the window");
+                return;
+            }
+            textScroller.Height = Console.BufferHeight - 6;
             textScroller.visibleBottomLines = textScroller.PageHeight;
             textScroller.ResetLines(false);
             textScroller.ResetLineBuilder();
@@ -125,7 +131,16 @@ namespace TextViewer
                     string timeSiceText = TimeSinceToString(dirInfo.LastWriteTime);
                     textScroller.AddTextToLine($"{timeSiceText,4}  "); // pad left 4
                     textScroller.SetColor(Color.Yellow);
-                    textScroller.FinishLine(Path.GetFileName(dir));
+
+                    int maxPathLength = Console.BufferWidth - 58;
+                    string path = Path.GetFileName(dir);
+                    string displayPath = path.Substring(0,Math.Min(maxPathLength, path.Length));
+                    if (path.Length > maxPathLength)
+                    {
+                        displayPath += "...";
+                    }
+                    textScroller.FinishLine(displayPath);
+
                     itemCount++;
                 }
 
@@ -144,7 +159,16 @@ namespace TextViewer
                     string timeSiceText = TimeSinceToString(fileInfo.LastWriteTime);
                     textScroller.AddTextToLine($"{timeSiceText,4}  "); // pad left 4
                     textScroller.SetColor(Color.Cyan);
-                    textScroller.FinishLine(Path.GetFileName(file));
+
+                    int maxPathLength = Console.BufferWidth - 58;
+                    string path = Path.GetFileName(file);
+                    string displayPath = path.Substring(0, Math.Min(maxPathLength, path.Length));
+                    if (path.Length > maxPathLength)
+                    {
+                        displayPath += "...";
+                    }
+                    textScroller.FinishLine(displayPath);
+
                     itemCount++;
                 }
 
@@ -260,17 +284,16 @@ namespace TextViewer
             {
                 int selectedItem = textScroller.HiglightLine;
                 Debug.WriteLine($"Open selected item {selectedItem}");
-                if (selectedItem < subDirectories.Length)
+                if (selectedItem < subDirectories.Length) // enter directory
                 {
                     parent.monitorDirectory = subDirectories[selectedItem];
                     parent.interfaceMode = InterfaceMode.DirectoryView;
                     parent.SetupWatcher(parent.monitorDirectory, null);
                     textScroller.scrollPosition = 0;
-                    //selectedItem = 0;
+                    selectedLine = 0;
                 }
-                else
+                else // open file
                 {
-
                     int index = selectedItem - subDirectories.Length;
                     parent.monitorTextFile = filesinDirectory[index];
                     parent.monitorDirectory = Path.GetDirectoryName(parent.monitorTextFile);
@@ -288,7 +311,7 @@ namespace TextViewer
                 parent.interfaceMode = InterfaceMode.DirectoryView;
                 parent.SetupWatcher(parent.monitorDirectory, null);
                 textScroller.scrollPosition = 0;
-                //selectedLine = 0;
+                selectedLine = 0;
             }
         }
     }

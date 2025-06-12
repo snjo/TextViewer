@@ -158,6 +158,8 @@ namespace TextViewer
 
             for (int i = scrollPosition; i < lines.Count && i < scrollPosition + PageHeight; i++)
             {
+                string line = lines[i];        
+
                 if (HiglightLine == i)
                 {
                     ConsoleColor foreground = Console.ForegroundColor;
@@ -165,18 +167,21 @@ namespace TextViewer
                     {
                         Console.Write(TerminalCodes.RGBtoForeground((Color)HiglightColor));
                     }
-                    Console.Write(Lines[i]); // cut off first chars for highlight symbol
+                    Console.Write(line); // cut off first chars for highlight symbol
                     if (HiglightColor != null)
                     {
                         Console.ForegroundColor = foreground;
                     }
-                    Console.SetCursorPosition(0, Console.GetCursorPosition().Top);
-                    Console.Write(HighlightSymbol);
+                    if (HighlightSymbol != "")
+                    {
+                        Console.SetCursorPosition(0, Console.GetCursorPosition().Top);
+                        Console.Write(HighlightSymbol);
+                    }
                     Console.WriteLine();
                 }
                 else
                 {
-                    Console.WriteLine(Lines[i]);
+                    Console.WriteLine(line);
                 }
             }
 
@@ -195,7 +200,6 @@ namespace TextViewer
         {
             
             bool atEnd = HiglightLine >= scrollPosition + PageHeight - 1;
-            Debug.WriteLine($"At end? {atEnd} : hll {HiglightLine} scp {scrollPosition} h {PageHeight}");
             return atEnd;
         }
 
@@ -203,7 +207,6 @@ namespace TextViewer
         {
 
             bool atStart = HiglightLine <= scrollPosition;
-            Debug.WriteLine($"At start? {atStart} : hll {HiglightLine} scp {scrollPosition} h {PageHeight}");
             return atStart;
         }
     }
