@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
+using System.Drawing;
 
 namespace TextViewer
 {
@@ -40,9 +41,12 @@ namespace TextViewer
             scroller.ResetLines();
             foreach (WatcherLogEntry entry in parent.changeLog)
             {
-                scroller.AddTextToLine($"{TerminalCodes.ForegroundBlue}{entry.time.ToShortDateString(),-12}{entry.time.ToLongTimeString(),-10}");
-                scroller.AddTextToLine($"{TerminalCodes.ForegroundCyan}{entry.entryType,-16}{entry.info,-16}");
-                scroller.FinishLine($"{TerminalCodes.RGBtoForeground(100,80,50)}{entry.watcherChangeType,-16} {TerminalCodes.ForegroundWhite}{entry.path}", true);
+                scroller.SetColorInBuilder(Color.Blue);
+                scroller.AddTextToLine($"{entry.time.ToShortDateString(),-12}{entry.time.ToLongTimeString(),-10}");
+                scroller.SetColorInBuilder(Color.Cyan);
+                scroller.AddTextToLine($"{entry.entryType,-16}{entry.info,-16}");
+                scroller.SetColorInBuilder(Color.LightGreen);
+                scroller.FinishLine($"{entry.watcherChangeType,-16}{TerminalCodes.ForegroundWhite}{entry.path}", true);
             }
         }
 

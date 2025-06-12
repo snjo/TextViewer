@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -40,12 +41,19 @@ namespace TextViewer
         public int scrollPosition = 0;
         public int visibleBottomLines = 5;
         public bool ShowOverflowArrows = true;
-        int currentLineNumber = 0;
+        //int currentLineNumber = 0;
 
-        public int lineCount = 0;
+        public int lineCount
+        {
+            get
+            {
+                return Lines.Count;
+            }
+        }
 
-        StringBuilder currentLineBuilder = new();
-        private List<string> Lines = [];
+        private StringBuilder currentLineBuilder = new();
+        
+        public List<string> Lines = [];    
 
         public int changeScroll(int change)
         {
@@ -71,21 +79,14 @@ namespace TextViewer
             scrollPosition = lineCount - visibleBottomLines;
         }
 
-        public void Reset()
+        public void ResetLineBuilder()
         {
-            currentLineNumber = 0;
             currentLineBuilder.Clear();
-        }
-
-        public void WriteLineFromBuilder()
-        {
-            currentLineNumber++;
         }
 
         public void ResetLines()
         {
             Lines.Clear();
-            lineCount = 0;
         }
 
         public void AddTextToLine(string text)
@@ -93,10 +94,10 @@ namespace TextViewer
             currentLineBuilder.Append(text);
         }
 
-        public void FinishLine(string text, bool addToBeginning = false)
+        public void FinishLine(string text, bool addToStartOfLines = false)
         {
             currentLineBuilder.Append(text);
-            if (addToBeginning)
+            if (addToStartOfLines)
             {
                 Lines.Insert(0,currentLineBuilder.ToString());
             }
@@ -105,15 +106,24 @@ namespace TextViewer
                 Lines.Add(currentLineBuilder.ToString());
             }
             currentLineBuilder.Clear();
-            lineCount = Lines.Count;
         }
 
-        public void SetColorInBuilder(ConsoleColor color, bool background = false)
+        public string GetLineInProgress()
+        {
+            return currentLineBuilder.ToString();
+        }
+
+        public void SetColorInBuilder(Color color, bool background = false)
         {
             string colorCode = "";
-
-            
-
+            if (background)
+            {
+                colorCode = TerminalCodes.RGBtoBackground(color);
+            }
+            else
+            {
+                colorCode = TerminalCodes.RGBtoForeground(color);
+            }
             currentLineBuilder.Append(colorCode);
         }
 
@@ -128,7 +138,7 @@ namespace TextViewer
             {
                 lines = Lines;
             }
-            lineCount = lines.Count;
+            //lineCount = lines.Count;
 
             if (ShowOverflowArrows && scrollPosition > 0)
             {
