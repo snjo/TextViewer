@@ -41,6 +41,9 @@ namespace TextViewer
         public int scrollPosition = 0;
         public int visibleBottomLines = 5;
         public bool ShowOverflowArrows = true;
+        public int HiglightLine = -1;
+        public string HighlightSymbol = "🢂";
+        public Color? HiglightColor = null;
         //int currentLineNumber = 0;
 
         public int lineCount
@@ -155,7 +158,26 @@ namespace TextViewer
 
             for (int i = scrollPosition; i < lines.Count && i < scrollPosition + PageHeight; i++)
             {
-               Console.WriteLine(Lines[i]);
+                if (HiglightLine == i)
+                {
+                    ConsoleColor foreground = Console.ForegroundColor;
+                    if (HiglightColor != null)
+                    {
+                        Console.Write(TerminalCodes.RGBtoForeground((Color)HiglightColor));
+                    }
+                    Console.Write(Lines[i]); // cut off first chars for highlight symbol
+                    if (HiglightColor != null)
+                    {
+                        Console.ForegroundColor = foreground;
+                    }
+                    Console.SetCursorPosition(0, Console.GetCursorPosition().Top);
+                    Console.Write(HighlightSymbol);
+                    Console.WriteLine();
+                }
+                else
+                {
+                    Console.WriteLine(Lines[i]);
+                }
             }
 
             if (ShowOverflowArrows && scrollPosition + PageHeight < lines.Count)
@@ -167,6 +189,22 @@ namespace TextViewer
                 Console.WriteLine();
             }
             
+        }
+
+        internal bool HighlightIsAtEndOfPage()
+        {
+            
+            bool atEnd = HiglightLine >= scrollPosition + PageHeight - 1;
+            Debug.WriteLine($"At end? {atEnd} : hll {HiglightLine} scp {scrollPosition} h {PageHeight}");
+            return atEnd;
+        }
+
+        internal bool HighlightIsAtStartOfPage()
+        {
+
+            bool atStart = HiglightLine <= scrollPosition;
+            Debug.WriteLine($"At start? {atStart} : hll {HiglightLine} scp {scrollPosition} h {PageHeight}");
+            return atStart;
         }
     }
 }

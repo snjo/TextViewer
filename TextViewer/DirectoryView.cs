@@ -70,10 +70,10 @@ namespace TextViewer
 
         internal void UpdateDirectoryView()
         {
-            textScroller.visibleBottomLines = 1;
+            textScroller.visibleBottomLines = textScroller.PageHeight;
             textScroller.ResetLines(false);
             textScroller.ResetLineBuilder();
-            
+            textScroller.HiglightLine = selectedLine;
 
             if (Directory.Exists(parent.monitorDirectory) == false)
             {
@@ -162,9 +162,9 @@ namespace TextViewer
             Cosmetic.SetColor(ConsoleColor.Cyan);
             int cursorTop = Console.GetCursorPosition().Top;
             Console.WriteLine($" [Esc] Menu  [Enter] Open  [Backspace] Parent Dir.  [F] File  [D] Directory  [F5] Refresh  [E] Log");
-            Console.SetCursorPosition(0, 4);
-            Console.Write("🢂");
-            Console.SetCursorPosition(0, cursorTop);
+            //Console.SetCursorPosition(0, 4);
+            //Console.Write("🢂");
+            //Console.SetCursorPosition(0, cursorTop);
         }
 
         void PlaceCursor(int lineNumber)
@@ -223,29 +223,42 @@ namespace TextViewer
             if ((keyInput.Key == ConsoleKey.DownArrow && keyInput.Modifiers == ConsoleModifiers.Shift) || keyInput.Key == ConsoleKey.PageDown)
             {
                 textScroller.changeScroll(10);
+                selectedLine += 10;
             }
-            if ((keyInput.Key == ConsoleKey.UpArrow && keyInput.Modifiers == ConsoleModifiers.Shift) || keyInput.Key == ConsoleKey.PageUp)
+            else if ((keyInput.Key == ConsoleKey.UpArrow && keyInput.Modifiers == ConsoleModifiers.Shift) || keyInput.Key == ConsoleKey.PageUp)
             {
                 textScroller.changeScroll(-10);
+                selectedLine -= 10;
+                if (selectedLine < 0)
+                {
+                    selectedLine = 0;
+                }
             }
 
-            if (keyInput.Key == ConsoleKey.DownArrow)
+            else if (keyInput.Key == ConsoleKey.DownArrow)
             {
-                //selectedLine++;
-                textScroller.changeScroll(1);
+                selectedLine++;
+                if (textScroller.HighlightIsAtEndOfPage())
+                {
+                    textScroller.changeScroll(1);
+                }
             }
             else if (keyInput.Key >= ConsoleKey.UpArrow)
             {
-                //selectedLine--;
-                //if (selectedLine < 0)
-                //{
-                //    selectedLine = 0;
-                //}
-                textScroller.changeScroll(-1);
+                selectedLine--;
+                if (selectedLine < 0)
+                {
+                    selectedLine = 0;
+                }
+                if (textScroller.HighlightIsAtStartOfPage())
+                {
+                    textScroller.changeScroll(-1);
+                }
+                //textScroller.changeScroll(-1);
             }
             else if (keyInput.Key == ConsoleKey.Enter)
             {
-                int selectedItem = textScroller.scrollPosition;
+                int selectedItem = textScroller.HiglightLine;
                 Debug.WriteLine($"Open selected item {selectedItem}");
                 if (selectedItem < subDirectories.Length)
                 {
