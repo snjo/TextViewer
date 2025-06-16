@@ -76,7 +76,7 @@ namespace TextViewer
 
             bool quit = false;
             DateTime lastViewUpdate = DateTime.Now;
-            TimeSpan autoUpdateViewTime = TimeSpan.FromSeconds(30);
+            TimeSpan autoUpdateViewTime = TimeSpan.FromSeconds(300);
 
             while (quit is false)
             {
@@ -168,6 +168,10 @@ namespace TextViewer
                     else if (interfaceMode == InterfaceMode.EventLog)
                     {
                         eventLogView.HandleEventLogViewKeys(keyInput);
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"Key press with no action {keyInput.Key.ToString()} [Root loop]");
                     }
 
                     UpdateView();

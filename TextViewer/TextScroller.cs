@@ -199,6 +199,11 @@ namespace TextViewer
             return atEnd;
         }
 
+        internal int HighlightBeyondPageCount()
+        {
+            return (scrollPosition + PageHeight - 2) - HiglightLine;
+        }
+
         internal bool HighlightIsAtStartOfPage()
         {
 

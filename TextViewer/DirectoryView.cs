@@ -16,6 +16,8 @@ namespace TextViewer
         private string[] subDirectories = [];
         private string[] filesinDirectory = [];
         private readonly TextScroller textScroller = new();
+        TextPreview textPreview = new TextPreview();
+        bool previewEnabled = true;
 
         internal void OpenDirectoryDialog()
         {
@@ -70,12 +72,14 @@ namespace TextViewer
 
         internal void UpdateDirectoryView()
         {
+            Debug.WriteLine($"Scroll: {textScroller.scrollPosition} {selectedLine}");
             if (Console.BufferHeight < 10 || Console.BufferWidth < 70)
             {
                 Console.WriteLine("Console height or width too low, please expand the window");
                 return;
             }
             textScroller.Height = Console.BufferHeight - 6;
+            if (previewEnabled) textScroller.Height -= 10;
             textScroller.visibleBottomLines = textScroller.PageHeight;
             textScroller.ResetLines(false);
             textScroller.ResetLineBuilder();
@@ -185,6 +189,23 @@ namespace TextViewer
             Console.WriteLine();
             Cosmetic.SetColor(ConsoleColor.Cyan);
             Console.WriteLine($" [Esc] Menu  [Enter] Open  [Backspace] Parent Dir.  [F] File  [D] Directory  [F5] Refresh  [E] Log");
+
+            if (previewEnabled)
+            {
+                if (selectedLine >= subDirectories.Length)
+                {
+                    int selectedItem = textScroller.HiglightLine;
+                    int index = selectedItem - subDirectories.Length;
+                    string file = "";
+                    if (index < filesinDirectory.Length)
+                    {
+                        file = filesinDirectory[index];
+                    }
+                    textPreview.LoadFile(file);
+                }
+                textPreview.PreviewText(3, Console.BufferHeight - 11, Console.BufferWidth - 6, 10);
+            }
+            
         }
 
         void PlaceCursor(int lineNumber)
@@ -260,10 +281,13 @@ namespace TextViewer
                 selectedLine++;
                 if (textScroller.HighlightIsAtEndOfPage())
                 {
-                    textScroller.ChangeScroll(1);
+                    //textScroller.ChangeScroll(1);
+                    int tooLow = textScroller.HighlightBeyondPageCount(); // compensate for the preview window messing up page length and not scrolling far enough down (more than 1)
+                    Debug.WriteLine($"Too low: {tooLow}");
+                    textScroller.ChangeScroll(-tooLow);
                 }
             }
-            else if (keyInput.Key >= ConsoleKey.UpArrow)
+            else if (keyInput.Key == ConsoleKey.UpArrow)
             {
                 selectedLine--;
                 if (selectedLine < 0)
@@ -308,6 +332,16 @@ namespace TextViewer
                 parent.SetupWatcher(parent.monitorDirectory, null);
                 textScroller.scrollPosition = 0;
                 selectedLine = 0;
+            }
+            else if (keyInput.Key == ConsoleKey.P)
+            {
+                previewEnabled = !previewEnabled;
+                parent.updateViewRequested = true;
+                Debug.WriteLine($"toggle preview to: {previewEnabled} [Directory view]");
+            }
+            else
+            {
+                Debug.WriteLine($"Keypress with no action: {keyInput.Key.ToString()}");
             }
         }
     }
