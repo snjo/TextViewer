@@ -20,7 +20,7 @@ namespace TextViewer
         {
             arguments = args;
             fileView = new(this);
-            directoryView = new(this);
+            directoryView = new(this, "PreviewableFileTypes.txt");
             eventLogView = new(this);
         }
 
@@ -428,6 +428,5 @@ namespace TextViewer
             Console.ForegroundColor = defaultForeColor;
             Console.BackgroundColor = defaultBackColor;
         }
-
     }
 }

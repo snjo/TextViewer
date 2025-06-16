@@ -10,7 +10,7 @@ using static TextViewer.TextViewerLoop;
 
 namespace TextViewer
 {
-    internal class DirectoryView (TextViewerLoop parent)
+    internal class DirectoryView// (TextViewerLoop parent)
     {
         private int selectedLine = 0;
         private string[] subDirectories = [];
@@ -18,6 +18,13 @@ namespace TextViewer
         private readonly TextScroller textScroller = new();
         TextPreview textPreview = new TextPreview();
         bool previewEnabled = true;
+        TextViewerLoop parent;
+
+        public DirectoryView(TextViewerLoop _parent, string config)
+        {
+            parent = _parent;
+            textPreview.LoadAllowableFileTypeConfig(config);
+        }
 
         internal void OpenDirectoryDialog()
         {
@@ -57,6 +64,7 @@ namespace TextViewer
                 parent.monitorDirectory = directorySelect;
                 parent.interfaceMode = InterfaceMode.DirectoryView;
                 parent.SetupWatcher(directorySelect, null);
+                parent.directoryView.ResetScroll();
             }
             else
             {
@@ -68,6 +76,12 @@ namespace TextViewer
                 parent.interfaceMode = InterfaceMode.MainMenu;
                 parent.updateViewRequested = true;
             }
+        }
+
+        private void ResetScroll()
+        {
+            textScroller.scrollPosition = 0;
+            selectedLine = 0;
         }
 
         internal void UpdateDirectoryView()

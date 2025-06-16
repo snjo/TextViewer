@@ -14,12 +14,35 @@ namespace TextViewer
         public string filePath = "";
         string[] lines = [];
         bool loadFile = false;
-        bool fileLoaded = false;
+        //bool fileLoaded = false;
+
+        internal void LoadAllowableFileTypeConfig(string configPath)
+        {
+            string[] types;
+            if (File.Exists(configPath))
+            {
+                Debug.WriteLine($"Loading previewable file type config, not found {configPath}");
+                try
+                {
+                    types = File.ReadAllLines(configPath);
+                    previewableExtensions = types.ToList();
+                    Debug.WriteLine($"Loaded previewable file types. Count {previewableExtensions.Count}");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Couldn't load file with previewable preview file types: {configPath}\n{ex.Message}");
+                }
+            }
+            else
+            {
+                Debug.WriteLine($"Can't load previewable file type config, not found {configPath}");
+            }
+        }
 
         public bool LoadFile(string loadFilePath, bool force = false)
         {
             loadFile = false;
-            fileLoaded = false;
+            //fileLoaded = false;
             if ((filePath == loadFilePath) && force == false)
             {
                 Debug.WriteLine($"Skipping reload of file, already loaded");
@@ -50,7 +73,7 @@ namespace TextViewer
                 try
                 {
                     lines = File.ReadAllLines(filePath);
-                    fileLoaded = true;
+                    //fileLoaded = true;
                     Debug.WriteLine($"Loaded preview file {filePath}");
                     return true;
                 }
@@ -67,28 +90,33 @@ namespace TextViewer
             int addY = 0;
             
             Console.SetCursorPosition(left, top + addY++);
-            Console.Write("--Text Preview".PadRight(width,'-'));
-            Console.SetCursorPosition(left, top + addY++);
+            Console.Write("┏━[P] Text Preview ".PadRight(width-1, '━'));
+            Console.Write("┓");
+            Console.SetCursorPosition(left, top + addY);
 
             RenderLines(lines, left, top, width, height, addY);
 
-            Console.SetCursorPosition(left, top + height);
-            Console.Write("-----Preview end".PadRight(width, '-'));
+            Console.SetCursorPosition(left, top + height-1);
+            Console.Write("┗━".PadRight(width-1, '━'));
+            Console.Write("┛");
+            //┏━┓
+            //┃ ┃
+            //┗━┛
         }
 
         private void RenderLines(string[] lines, int left, int top, int width, int height, int addY)
         {
-            
-            for (int i = 0; i < height - addY - 1; i++)
+            for (int i = 0; i < height - 2; i++)
             {
-                if (i >= lines.Length)
+                string line = "";
+                if (i < lines.Length)
                 {
-                    break;
+                    line = lines[i];
                 }
                 Console.SetCursorPosition(left, top + addY++);
-                int maxLength = Math.Min(width, lines[i].Length);
+                int maxLength = Math.Min(width - 6, line.Length);
                 if (maxLength < 0) maxLength = 0;
-                Console.Write(lines[i][..maxLength].PadRight(width,' '));
+                Console.Write("┃ " + line[..maxLength].Replace("\t", "   ").PadRight(width-4,' ') + " ┃");
             }
         }
     }
