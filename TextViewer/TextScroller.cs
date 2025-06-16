@@ -46,7 +46,7 @@ namespace TextViewer
         public Color? HiglightColor = null;
         //int currentLineNumber = 0;
 
-        public int lineCount
+        public int LineCount
         {
             get
             {
@@ -54,16 +54,16 @@ namespace TextViewer
             }
         }
 
-        private StringBuilder currentLineBuilder = new();
+        private readonly StringBuilder currentLineBuilder = new();
         
         public List<string> Lines = [];    
 
-        public int changeScroll(int change)
+        public int ChangeScroll(int change)
         {
             scrollPosition += change;
-            if (scrollPosition >= lineCount - visibleBottomLines)
+            if (scrollPosition >= LineCount - visibleBottomLines)
             {
-                scrollPosition = lineCount - visibleBottomLines;
+                scrollPosition = LineCount - visibleBottomLines;
             }
             if (scrollPosition < 0)
             {
@@ -79,7 +79,7 @@ namespace TextViewer
 
         public void ScrollToEnd()
         {
-            scrollPosition = lineCount - visibleBottomLines;
+            scrollPosition = LineCount - visibleBottomLines;
         }
 
         public void ResetLineBuilder()
@@ -122,7 +122,7 @@ namespace TextViewer
 
         public void SetColor(Color color, bool background = false)
         {
-            string colorCode = "";
+            string colorCode;
             if (background)
             {
                 colorCode = TerminalCodes.RGBtoBackground(color);
@@ -141,11 +141,7 @@ namespace TextViewer
 
         public void OutputLines(List<string>? lines)
         {
-            if (lines == null)
-            {
-                lines = Lines;
-            }
-            //lineCount = lines.Count;
+            lines ??= Lines; // if lines is null, use the already created list of lines
 
             if (ShowOverflowArrows && scrollPosition > 0)
             {
