@@ -12,7 +12,7 @@ namespace TextViewer
     class EventLogView (TextViewerLoop parent)
     {
         int scroll = 0;
-        TextScroller scroller = new();
+        private readonly TextScroller scroller = new();
 
         internal void UpdateEvenLogView()
         {
@@ -70,19 +70,19 @@ namespace TextViewer
             }
             else if (keyInput.Key == ConsoleKey.PageDown || (keyInput.Key == ConsoleKey.DownArrow && keyInput.Modifiers == ConsoleModifiers.Shift))
             {
-                scroller.changeScroll(pageScroll);
+                scroller.ChangeScroll(pageScroll);
             }
             else if (keyInput.Key == ConsoleKey.PageUp || (keyInput.Key == ConsoleKey.UpArrow && keyInput.Modifiers == ConsoleModifiers.Shift))
             {
-                scroller.changeScroll(-pageScroll);
+                scroller.ChangeScroll(-pageScroll);
             }
             else if (keyInput.Key == ConsoleKey.DownArrow)
             {
-                scroller.changeScroll(1);
+                scroller.ChangeScroll(1);
             }
             else if (keyInput.Key == ConsoleKey.UpArrow)
             {
-                scroller.changeScroll(-1);
+                scroller.ChangeScroll(-1);
             }
             else if (keyInput.Key == ConsoleKey.End)
             {

@@ -12,10 +12,10 @@ namespace TextViewer
 {
     internal class DirectoryView (TextViewerLoop parent)
     {
-        int selectedLine = 0;
-        string[] subDirectories = [];
-        string[] filesinDirectory = [];
-        TextScroller textScroller = new();
+        private int selectedLine = 0;
+        private string[] subDirectories = [];
+        private string[] filesinDirectory = [];
+        private readonly TextScroller textScroller = new();
 
         internal void OpenDirectoryDialog()
         {
@@ -134,7 +134,7 @@ namespace TextViewer
 
                     int maxPathLength = Console.BufferWidth - 58;
                     string path = Path.GetFileName(dir);
-                    string displayPath = path.Substring(0,Math.Min(maxPathLength, path.Length));
+                    string displayPath = path[..Math.Min(maxPathLength, path.Length)];
                     if (path.Length > maxPathLength)
                     {
                         displayPath += "...";
@@ -162,7 +162,7 @@ namespace TextViewer
 
                     int maxPathLength = Console.BufferWidth - 58;
                     string path = Path.GetFileName(file);
-                    string displayPath = path.Substring(0, Math.Min(maxPathLength, path.Length));
+                    string displayPath = path[..Math.Min(maxPathLength, path.Length)];
                     if (path.Length > maxPathLength)
                     {
                         displayPath += "...";
@@ -184,11 +184,7 @@ namespace TextViewer
             }
             Console.WriteLine();
             Cosmetic.SetColor(ConsoleColor.Cyan);
-            int cursorTop = Console.GetCursorPosition().Top;
             Console.WriteLine($" [Esc] Menu  [Enter] Open  [Backspace] Parent Dir.  [F] File  [D] Directory  [F5] Refresh  [E] Log");
-            //Console.SetCursorPosition(0, 4);
-            //Console.Write("🢂");
-            //Console.SetCursorPosition(0, cursorTop);
         }
 
         void PlaceCursor(int lineNumber)
@@ -246,12 +242,12 @@ namespace TextViewer
         {
             if ((keyInput.Key == ConsoleKey.DownArrow && keyInput.Modifiers == ConsoleModifiers.Shift) || keyInput.Key == ConsoleKey.PageDown)
             {
-                textScroller.changeScroll(10);
+                textScroller.ChangeScroll(10);
                 selectedLine += 10;
             }
             else if ((keyInput.Key == ConsoleKey.UpArrow && keyInput.Modifiers == ConsoleModifiers.Shift) || keyInput.Key == ConsoleKey.PageUp)
             {
-                textScroller.changeScroll(-10);
+                textScroller.ChangeScroll(-10);
                 selectedLine -= 10;
                 if (selectedLine < 0)
                 {
@@ -264,7 +260,7 @@ namespace TextViewer
                 selectedLine++;
                 if (textScroller.HighlightIsAtEndOfPage())
                 {
-                    textScroller.changeScroll(1);
+                    textScroller.ChangeScroll(1);
                 }
             }
             else if (keyInput.Key >= ConsoleKey.UpArrow)
@@ -276,7 +272,7 @@ namespace TextViewer
                 }
                 if (textScroller.HighlightIsAtStartOfPage())
                 {
-                    textScroller.changeScroll(-1);
+                    textScroller.ChangeScroll(-1);
                 }
                 //textScroller.changeScroll(-1);
             }
