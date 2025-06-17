@@ -18,6 +18,7 @@ namespace TextViewer
         private readonly TextScroller textScroller = new();
         TextPreview textPreview = new TextPreview();
         bool previewEnabled = true;
+        int previewHeight = 10;
         TextViewerLoop parent;
 
         public DirectoryView(TextViewerLoop _parent, string config)
@@ -93,7 +94,11 @@ namespace TextViewer
                 return;
             }
             textScroller.Height = Console.BufferHeight - 6;
-            if (previewEnabled) textScroller.Height -= 10;
+            if (previewEnabled)
+            {
+                previewHeight = (Console.BufferHeight-5) / 2; // auto adjust preview height based on console height
+                textScroller.Height -= previewHeight;
+            }
             textScroller.visibleBottomLines = textScroller.PageHeight;
             textScroller.ResetLines(false);
             textScroller.ResetLineBuilder();
@@ -217,7 +222,7 @@ namespace TextViewer
                     }
                     textPreview.LoadFile(file);
                 }
-                textPreview.PreviewText(3, Console.BufferHeight - 11, Console.BufferWidth - 6, 10);
+                textPreview.PreviewText(3, Console.BufferHeight - 1 - previewHeight, Console.BufferWidth - 6, previewHeight);
             }
             
         }
