@@ -222,7 +222,10 @@ namespace TextViewer
                     }
                     textPreview.LoadFile(file);
                 }
-                textPreview.PreviewText(3, Console.BufferHeight - 1 - previewHeight, Console.BufferWidth - 6, previewHeight);
+                
+                
+                textPreview.PreviewFile(3, Console.BufferHeight - 1 - previewHeight, Console.BufferWidth - 6, previewHeight);
+                
             }
             
         }
