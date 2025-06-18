@@ -1,51 +1,42 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Runtime.Intrinsics.X86;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Drawing;
 
 namespace TextViewer
 {
     public static class TerminalCodes
     {
         // all terminal codes start with the escape character 0x1B : \x1b[30m
-        public static readonly string Default =              "\x1B[0m";
+        public static readonly string Default = "\x1B[0m";
 
-        public static readonly string Bold =                 "\x1B[1m";
-        public static readonly string NoBold =               "\x1B[22m";
-        public static readonly string Regular =              "\x1B[22m"; // same as NoBold, for convenience
+        public static readonly string Bold = "\x1B[1m";
+        public static readonly string NoBold = "\x1B[22m";
+        public static readonly string Regular = "\x1B[22m"; // same as NoBold, for convenience
 
-        public static readonly string Underline =            "\x1B[4m";
-        public static readonly string NoUnderline =          "\x1B[24m";
+        public static readonly string Underline = "\x1B[4m";
+        public static readonly string NoUnderline = "\x1B[24m";
 
-        public static readonly string Negative =             "\x1B[7m";
-        public static readonly string Positive =             "\x1B[27m";
+        public static readonly string Negative = "\x1B[7m";
+        public static readonly string Positive = "\x1B[27m";
 
-        public static readonly string ForegroundBlack =      "\x1B[30m";
-        public static readonly string ForegroundRed =        "\x1B[31m";
-        public static readonly string ForegroundGreen =      "\x1B[32m";
-        public static readonly string ForegroundYellow =     "\x1B[33m";
-        public static readonly string ForegroundBlue =       "\x1B[34m";
-        public static readonly string ForegroundMagenta =    "\x1B[35m";
-        public static readonly string ForegroundCyan =       "\x1B[36m";
-        public static readonly string ForegroundWhite =      "\x1B[37m";
+        public static readonly string ForegroundBlack = "\x1B[30m";
+        public static readonly string ForegroundRed = "\x1B[31m";
+        public static readonly string ForegroundGreen = "\x1B[32m";
+        public static readonly string ForegroundYellow = "\x1B[33m";
+        public static readonly string ForegroundBlue = "\x1B[34m";
+        public static readonly string ForegroundMagenta = "\x1B[35m";
+        public static readonly string ForegroundCyan = "\x1B[36m";
+        public static readonly string ForegroundWhite = "\x1B[37m";
         //public static string ForegroundExtended = "\x1B[38m";
-        public static readonly string ForegroundDefault =    "\x1B[39m";
-        public static readonly string BackgroundBlack =      "\x1B[40m";
-        public static readonly string BackgroundRed =        "\x1B[41m";
-        public static readonly string BackgroundGreen =      "\x1B[42m";
-        public static readonly string BackgroundYellow =     "\x1B[43m";
-        public static readonly string BackgroundBlue =       "\x1B[44m";
-        public static readonly string BackgroundMagenta =    "\x1B[45m";
-        public static readonly string BackgroundCyan =       "\x1B[46m";
-        public static readonly string BackgroundWhite =      "\x1B[47m";
+        public static readonly string ForegroundDefault = "\x1B[39m";
+        public static readonly string BackgroundBlack = "\x1B[40m";
+        public static readonly string BackgroundRed = "\x1B[41m";
+        public static readonly string BackgroundGreen = "\x1B[42m";
+        public static readonly string BackgroundYellow = "\x1B[43m";
+        public static readonly string BackgroundBlue = "\x1B[44m";
+        public static readonly string BackgroundMagenta = "\x1B[45m";
+        public static readonly string BackgroundCyan = "\x1B[46m";
+        public static readonly string BackgroundWhite = "\x1B[47m";
         //public static string BackgroundExtended = "\x1B[48m";
-        public static readonly string BackgroundDefault =    "\x1B[49m";
+        public static readonly string BackgroundDefault = "\x1B[49m";
 
         public static string RGBtoForeground(int r, int g, int b)
         {

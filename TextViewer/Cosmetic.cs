@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Drawing;
+﻿using System.Drawing;
 
 namespace TextViewer
 {
@@ -41,7 +36,7 @@ namespace TextViewer
             }
             else if (timeSinceFileWrite < DayAgo)
             {
-               return Color.Blue;
+                return Color.Blue;
             }
             else if (timeSinceFileWrite < WeekAgo)
             {

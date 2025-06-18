@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 using System.Drawing;
 
 namespace TextViewer
 {
-    class EventLogView (TextViewerLoop parent)
+    class EventLogView(TextViewerLoop parent)
     {
         int scroll = 0;
         private readonly TextScroller scroller = new();
@@ -24,9 +18,9 @@ namespace TextViewer
             }
             string dingDir = parent.alertWhenDirectoryChanged ? "🔔 Dir" : "🔕 Dir";
             string dingFile = parent.alertWhenFileChanged ? "🔔 File" : "🔕 File";
-            Cosmetic.ShowTitleBar($"Event Log : {directory}".PadRight(Console.BufferWidth-25) + $"{dingDir}  {dingFile}");
+            Cosmetic.ShowTitleBar($"Event Log : {directory}".PadRight(Console.BufferWidth - 25) + $"{dingDir}  {dingFile}");
             //Console.WriteLine(parent.changeLog.ToString());
-            Console.WriteLine("Date".PadRight(12) + "Time".PadRight(10) + "Entry type".PadRight(16) + "Information".PadRight(16) + "Change type".PadRight(16) + "Path" );
+            Console.WriteLine("Date".PadRight(12) + "Time".PadRight(10) + "Entry type".PadRight(16) + "Information".PadRight(16) + "Change type".PadRight(16) + "Path");
 
             scroller.Height = Console.BufferHeight - 6;
             AssembleScrollableText();
@@ -98,7 +92,7 @@ namespace TextViewer
         void AddToScroll(int change)
         {
             scroll += change;
-            if (scroll >= parent.changeLog.Count) scroll = parent.changeLog.Count-1;
+            if (scroll >= parent.changeLog.Count) scroll = parent.changeLog.Count - 1;
             if (scroll < 0) scroll = 0;
             Debug.WriteLine($"scroll: {scroll}");
         }

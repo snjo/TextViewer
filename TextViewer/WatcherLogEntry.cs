@@ -15,7 +15,7 @@
         public WatcherChangeTypes? watcherChangeType;
         public DateTime time;
         public string info = "";
-        
+
         public WatcherLogEntry(EntryType _entryType, DateTime _time, string _path, WatcherChangeTypes? _watcherChangeType, string _info = "")
         {
             entryType = _entryType;

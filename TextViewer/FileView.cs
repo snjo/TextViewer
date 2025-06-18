@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 using static TextViewer.TextViewerLoop;
 
 namespace TextViewer
 {
-    internal class FileView (TextViewerLoop parent)
+    internal class FileView(TextViewerLoop parent)
     {
         internal string[] lines = [];
         internal int scrollLine = 0;

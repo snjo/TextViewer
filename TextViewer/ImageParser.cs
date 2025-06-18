@@ -20,7 +20,7 @@ namespace TextViewer
 
         public ImageParser(string filePath)
         {
-            if (OperatingSystem.IsWindows() && OperatingSystem.IsWindowsVersionAtLeast(6,1))
+            if (OperatingSystem.IsWindows() && OperatingSystem.IsWindowsVersionAtLeast(6, 1))
             {
                 if (filePath == null)
                 {

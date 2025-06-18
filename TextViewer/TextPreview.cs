@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Security.AccessControl;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 
 namespace TextViewer
 {
@@ -46,7 +40,7 @@ namespace TextViewer
         public bool LoadFile(string loadFilePath, bool force = false)
         {
             Debug.WriteLine($"Loading file for preview {loadFilePath}");
-            
+
             //fileLoaded = false;
             if ((filePath == loadFilePath) && force == false)
             {
@@ -60,7 +54,7 @@ namespace TextViewer
             if (filePath != "" && File.Exists(filePath))
             {
                 string fileExt = Path.GetExtension(filePath).ToLowerInvariant();
-                
+
                 foreach (string textExtension in FileTypes.TextExtensions)
                 {
                     if (textExtension == fileExt)
@@ -120,11 +114,11 @@ namespace TextViewer
         internal void PreviewFile(int left, int top, int width, int height)
         {
             int addY = 0;
-            
+
             Console.SetCursorPosition(left, top + addY++);
-            Console.Write("┏━[P] Preview ".PadRight(width-1, '━'));
+            Console.Write("┏━[P] Preview ".PadRight(width - 1, '━'));
             Console.Write("┓");
-            
+
 
             if (FileIsText)
             {
@@ -146,7 +140,7 @@ namespace TextViewer
             }
 
             Console.SetCursorPosition(left, top + height - 1);
-            Console.Write("┗━".PadRight(width-1, '━'));
+            Console.Write("┗━".PadRight(width - 1, '━'));
             Console.Write("┛");
             //┏━┓
             //┃ ┃
@@ -165,7 +159,7 @@ namespace TextViewer
                 Console.SetCursorPosition(left, top + addY++);
                 int maxLength = Math.Min(width - 6, line.Length);
                 if (maxLength < 0) maxLength = 0;
-                Console.Write("┃ " + line[..maxLength].Replace("\t", "   ").PadRight(width-4,' ') + " ┃");
+                Console.Write("┃ " + line[..maxLength].Replace("\t", "   ").PadRight(width - 4, ' ') + " ┃");
             }
         }
     }

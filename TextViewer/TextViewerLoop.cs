@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection.Metadata.Ecma335;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 
 namespace TextViewer
 {
@@ -250,9 +243,9 @@ namespace TextViewer
             }
         }
 
-        
 
-        
+
+
 
         internal void SetupWatcher(string? directory, string? filePath)
         {
@@ -260,7 +253,7 @@ namespace TextViewer
             {
                 changeLog.Add(new WatcherLogEntry(WatcherLogEntry.EntryType.WatcherConfig, DateTime.Now, filePath, null, "File"));
             }
-            else if(directory != null)
+            else if (directory != null)
             {
                 changeLog.Add(new WatcherLogEntry(WatcherLogEntry.EntryType.WatcherConfig, DateTime.Now, directory, null, "Directory"));
             }
@@ -378,7 +371,7 @@ namespace TextViewer
                 interfaceMode = InterfaceMode.MainMenu;
                 MainMenuView.UpdateMainMenuView();
             }
-        }        
+        }
 
         public static string DateAndTimeString(DateTime date)
         {

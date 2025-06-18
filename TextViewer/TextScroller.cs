@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
+﻿using System.Drawing;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace TextViewer
 {
@@ -55,8 +50,8 @@ namespace TextViewer
         }
 
         private readonly StringBuilder currentLineBuilder = new();
-        
-        public List<string> Lines = [];    
+
+        public List<string> Lines = [];
 
         public int ChangeScroll(int change)
         {
@@ -106,7 +101,7 @@ namespace TextViewer
             currentLineBuilder.Append(text);
             if (addToStartOfLines)
             {
-                Lines.Insert(0,currentLineBuilder.ToString());
+                Lines.Insert(0, currentLineBuilder.ToString());
             }
             else
             {
@@ -154,7 +149,7 @@ namespace TextViewer
 
             for (int i = scrollPosition; i < lines.Count && i < scrollPosition + PageHeight; i++)
             {
-                string line = lines[i];        
+                string line = lines[i];
 
                 if (HiglightLine == i)
                 {
@@ -189,12 +184,12 @@ namespace TextViewer
             {
                 Console.WriteLine();
             }
-            
+
         }
 
         internal bool HighlightIsAtEndOfPage()
         {
-            
+
             bool atEnd = HiglightLine >= scrollPosition + PageHeight - 1;
             return atEnd;
         }

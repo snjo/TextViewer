@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Runtime;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 using System.Drawing;
 using static TextViewer.TextViewerLoop;
 
@@ -36,7 +30,7 @@ namespace TextViewer
             Console.Write(" Directory: ");
             string directorySelect = Console.ReadLine() + "";
             if (directorySelect.Length == 0) directorySelect = ".";
-            if (directorySelect.Substring(directorySelect.Length-1,1) != "\\")
+            if (directorySelect.Substring(directorySelect.Length - 1, 1) != "\\")
             {
                 // this prevents "c:" from being interpreted as the program's folder by making it "c:\"
                 directorySelect += "\\";
@@ -87,7 +81,6 @@ namespace TextViewer
 
         internal void UpdateDirectoryView()
         {
-            Debug.WriteLine($"Scroll: {textScroller.scrollPosition} {selectedLine}");
             if (Console.BufferHeight < 10 || Console.BufferWidth < 70)
             {
                 Console.WriteLine("Console height or width too low, please expand the window");
@@ -96,7 +89,7 @@ namespace TextViewer
             textScroller.Height = Console.BufferHeight - 6;
             if (previewEnabled)
             {
-                previewHeight = (Console.BufferHeight-5) / 2; // auto adjust preview height based on console height
+                previewHeight = (Console.BufferHeight - 5) / 2; // auto adjust preview height based on console height
                 textScroller.Height -= previewHeight;
             }
             textScroller.visibleBottomLines = textScroller.PageHeight;
@@ -222,12 +215,12 @@ namespace TextViewer
                     }
                     textPreview.LoadFile(file);
                 }
-                
-                
+
+
                 textPreview.PreviewFile(3, Console.BufferHeight - 1 - previewHeight, Console.BufferWidth - 6, previewHeight);
-                
+
             }
-            
+
         }
 
         void PlaceCursor(int lineNumber)
@@ -263,7 +256,7 @@ namespace TextViewer
             TimeSpan timeSince = DateTime.Now - time;
             if (timeSince.TotalDays >= 365)
             {
-                timeSiceText = $"{(int)(timeSince.TotalDays/365)}y";
+                timeSiceText = $"{(int)(timeSince.TotalDays / 365)}y";
             }
             else if (timeSince.TotalDays >= 1)
             {
