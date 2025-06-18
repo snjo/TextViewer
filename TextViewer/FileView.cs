@@ -157,6 +157,15 @@ namespace TextViewer
             {
                 UpdateImageView();
             }
+            else
+            {
+                Console.Clear();
+                Console.WriteLine("Only text and image files can be viewed.");
+                Console.WriteLine("Press any key to return.");
+                Console.ReadKey();
+                parent.interfaceMode = InterfaceMode.DirectoryView;
+                parent.SetupWatcher(parent.monitorDirectory, null);
+            }
         }
 
         private static void PrintTextLine(string line, string lineNumber, ConsoleColor TitleFG, ConsoleColor TitleBG, ConsoleColor TextFG, ConsoleColor TextBG)

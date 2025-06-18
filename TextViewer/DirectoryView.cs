@@ -325,7 +325,7 @@ namespace TextViewer
             else if (keyInput.Key == ConsoleKey.Enter)
             {
                 int selectedItem = textScroller.HiglightLine;
-                Debug.WriteLine($"Open selected item {selectedItem}");
+                Debug.WriteLine($"Open selected directory {selectedItem}");
                 if (selectedItem < subDirectories.Length) // enter directory
                 {
                     parent.monitorDirectory = subDirectories[selectedItem];
@@ -338,6 +338,7 @@ namespace TextViewer
                 {
                     int index = selectedItem - subDirectories.Length;
                     parent.monitorTextFile = filesinDirectory[index];
+                    Debug.WriteLine($"Open selected file {selectedItem} {parent.monitorTextFile}");
                     parent.monitorDirectory = Path.GetDirectoryName(parent.monitorTextFile);
                     parent.fileView.LoadFile(parent.monitorTextFile, true, true);
                     parent.interfaceMode = InterfaceMode.FileView;
