@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,6 +16,8 @@ namespace TextViewer
         public bool forceFileUpdate = false;
         public int fileUpdateCountdown = -1;
         internal DateTime lastFileUpdate = DateTime.MinValue;
+        private FileTypes.ContentTypes contentType = FileTypes.ContentTypes.Unknown;
+        private ImageParser? imageParser = null;
 
         public void HandleFileViewKeys(ConsoleKeyInfo keyInput)
         {
@@ -71,7 +74,7 @@ namespace TextViewer
             }
         }
 
-        internal void UpdateFileView()
+        private void UpdateTextView()
         {
             Console.Clear();
 
@@ -99,9 +102,7 @@ namespace TextViewer
             Console.WriteLine("┃");
 
             Console.WriteLine($"┣━━━━━━┳━━━━━━┻".PadRight(Console.BufferWidth - 20, '━') + "┻━━━━━━━━━━━━━━━━━━┫");
-            //Console.SetCursorPosition(0, 1);
-            //SetColor(ConsoleColor.DarkCyan, ConsoleColor.Black);
-            //Console.WriteLine($"Time: {DateTime.Now.ToShortTimeString()}");
+
             int extraLines = 0;
             for (int i = scrollLine; i < lines.Length && i < Console.BufferHeight + scrollLine - 6 - extraLines; i++)
             {
@@ -137,6 +138,27 @@ namespace TextViewer
             Console.WriteLine($" [Esc] Menu  [Backspace] Parent Dir.  [L] Goto Line  [↓↑] scroll  [PgUp PgDn Shift+↓↑] scroll 10  [F5] Refresh  [E] Log");
         }
 
+        private void UpdateImageView()
+        {
+            Console.Clear();
+            if (imageParser != null)
+            {
+                imageParser.WriteImageToConsole(0, 0, Console.BufferWidth, Console.BufferHeight, true);
+            }
+        }
+
+        internal void UpdateFileView()
+        {
+            if (contentType == FileTypes.ContentTypes.Text)
+            {
+                UpdateTextView();
+            }
+            else if (contentType == FileTypes.ContentTypes.Image)
+            {
+                UpdateImageView();
+            }
+        }
+
         private static void PrintTextLine(string line, string lineNumber, ConsoleColor TitleFG, ConsoleColor TitleBG, ConsoleColor TextFG, ConsoleColor TextBG)
         {
             Console.Write($"┃ {(lineNumber).ToString().PadLeft(4, '0')} ");
@@ -159,13 +181,28 @@ namespace TextViewer
         {
             Debug.WriteLine($"Loading file: {filePath} showError: {showError} init: {initWatcher}");
             scrollLine = 0;
+
+            string extension = Path.GetExtension(filePath) + "";
+            contentType = FileTypes.GetContentType(extension);
+
+            lines = [];
+
             if (filePath is not null)
             {
-                //if (File.Exists(filePath))
-                //{
                 try
                 {
-                    lines = File.ReadAllLines(filePath);
+                    if (contentType == FileTypes.ContentTypes.Text)
+                    {
+                        lines = File.ReadAllLines(filePath);
+                    }
+                    else if (contentType == FileTypes.ContentTypes.Image)
+                    {
+                        if (imageParser != null)
+                        {
+                            imageParser.Dispose();
+                        }
+                        imageParser = new(filePath);
+                    }
                     parent.updateViewRequested = true;
                     lastFileUpdate = File.GetLastWriteTime(filePath);
 

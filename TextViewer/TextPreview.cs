@@ -10,8 +10,8 @@ namespace TextViewer
 {
     internal class TextPreview
     {
-        public List<string> previewableTextExtensions = [ ".txt", ".cs", ".csv" ];
-        public List<string> previewableImageExtensions = [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tif", ".tiff"];
+        //public List<string> previewableTextExtensions = [ ".txt", ".cs", ".csv" ];
+        //public List<string> previewableImageExtensions = [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tif", ".tiff"];
         public string filePath = "";
         string[] lines = [];
         public bool FileIsText = false;
@@ -29,8 +29,8 @@ namespace TextViewer
                 try
                 {
                     types = File.ReadAllLines(configPath);
-                    previewableTextExtensions = types.ToList();
-                    Debug.WriteLine($"Loaded previewable file types. Count {previewableTextExtensions.Count}");
+                    FileTypes.AddTextTypes(types);
+                    Debug.WriteLine($"Loaded previewable file types. Count {FileTypes.TextExtensions.Count}");
                 }
                 catch (Exception ex)
                 {
@@ -61,7 +61,7 @@ namespace TextViewer
             {
                 string fileExt = Path.GetExtension(filePath).ToLowerInvariant();
                 
-                foreach (string textExtension in previewableTextExtensions)
+                foreach (string textExtension in FileTypes.TextExtensions)
                 {
                     if (textExtension == fileExt)
                     {
@@ -72,7 +72,7 @@ namespace TextViewer
 
                 if (previewImages && FileIsText == false)
                 {
-                    foreach (string imageExtension in previewableImageExtensions)
+                    foreach (string imageExtension in FileTypes.ImageExtensions)
                     {
                         if (imageExtension == fileExt)
                         {

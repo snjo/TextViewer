@@ -4,7 +4,7 @@ using System.Runtime.Versioning;
 
 namespace TextViewer
 {
-    public class ImageParser
+    public class ImageParser : IDisposable
     {
         [SupportedOSPlatform("windows")]
 
@@ -85,6 +85,17 @@ namespace TextViewer
         public static string ColorChar(char symbol, Color color)
         {
             return $"\x1B[38;2;{color.R};{color.G};{color.B}m{symbol}";
+        }
+
+        public void Dispose()
+        {
+            if (OperatingSystem.IsWindows() && OperatingSystem.IsWindowsVersionAtLeast(6, 1))
+            {
+                if (bmp != null)
+                {
+                    bmp.Dispose();
+                }
+            }
         }
     }
 }
