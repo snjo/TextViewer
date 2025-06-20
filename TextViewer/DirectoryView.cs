@@ -217,7 +217,7 @@ namespace TextViewer
                 }
 
 
-                textPreview.PreviewFile(3, Console.BufferHeight - 1 - previewHeight, Console.BufferWidth - 6, previewHeight);
+                textPreview.PreviewFile(0, Console.BufferHeight - 1 - previewHeight, Console.BufferWidth, previewHeight);
 
             }
 

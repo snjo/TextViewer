@@ -113,18 +113,22 @@ namespace TextViewer
 
         internal void PreviewFile(int left, int top, int width, int height)
         {
-            int addY = 0;
-
-            Console.SetCursorPosition(left, top + addY++);
+            Console.SetCursorPosition(left, top);
             Console.Write("┏━[P] Preview ".PadRight(width - 1, '━'));
             Console.Write("┓");
+
+            for (int i = 1; i < height - 1; i++)
+            {
+                Console.SetCursorPosition(left, top + i);
+                Console.Write("┃".PadRight(width-1,' ') + "┃");
+            }
 
 
             if (FileIsText)
             {
                 Debug.WriteLine($"text preview");
-                Console.SetCursorPosition(left, top + addY);
-                RenderLines(lines, left, top, width, height, addY);
+                Console.SetCursorPosition(left, top);
+                RenderLines(lines, left+1, top + 1, width-2, height-2);
             }
             else if (FileIsImage)
             {
@@ -147,7 +151,7 @@ namespace TextViewer
             //┗━┛
         }
 
-        private void RenderLines(string[] lines, int left, int top, int width, int height, int addY)
+        private void RenderLines(string[] lines, int left, int top, int width, int height)
         {
             for (int i = 0; i < height - 2; i++)
             {
@@ -156,10 +160,10 @@ namespace TextViewer
                 {
                     line = lines[i];
                 }
-                Console.SetCursorPosition(left, top + addY++);
-                int maxLength = Math.Min(width - 6, line.Length);
+                Console.SetCursorPosition(left, top + i);
+                int maxLength = Math.Min(width, line.Length);
                 if (maxLength < 0) maxLength = 0;
-                Console.Write("┃ " + line[..maxLength].Replace("\t", "   ").PadRight(width - 4, ' ') + " ┃");
+                Console.Write(line[..maxLength].Replace("\t", "   ").PadRight(width, ' '));
             }
         }
     }
