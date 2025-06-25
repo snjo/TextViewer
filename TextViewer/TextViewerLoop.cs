@@ -73,6 +73,15 @@ namespace TextViewer
 
             while (quit is false)
             {
+                // mouse, only gives screen coordinates, not column and row...
+                /*if (Input.IsMouseButtonPressed(Input.MouseButton.LeftMouseButton))
+                {
+                    Debug.WriteLine($"Mouse pressed");
+                    (int mx, int my) = Input.GetMousePosition();
+                    Debug.WriteLine($"Mouse x:{mx} y:{my}");
+                    Debug.WriteLine(Console.);
+                }*/
+
                 if (fileView.fileUpdateCountdown == 0) // the watcher has detected a change, wait for the file to complete, maybe there's two triggers
                 {
                     if (interfaceMode == InterfaceMode.FileView) fileView.LoadFile(monitorTextFile, false, false); // Load file, don't set up watcher again, already active
@@ -167,7 +176,9 @@ namespace TextViewer
                         Debug.WriteLine($"Key press with no action {keyInput.Key.ToString()} [Root loop]");
                     }
 
-                    UpdateView();
+
+
+                        UpdateView();
                     lastViewUpdate = DateTime.Now;
                     Console.ResetColor();
                 }
