@@ -64,7 +64,7 @@ namespace TextViewer
             else if (keyInput.Key == ConsoleKey.Backspace)
             {
                 parent.interfaceMode = InterfaceMode.DirectoryView;
-                parent.SetupWatcher(parent.monitorDirectory, null);
+                parent.SetupWatcher(parent.monitorDirectory, null, parent.includeSubFolders);
             }
         }
 
@@ -158,7 +158,7 @@ namespace TextViewer
                 Console.WriteLine("Press any key to return.");
                 Console.ReadKey();
                 parent.interfaceMode = InterfaceMode.DirectoryView;
-                parent.SetupWatcher(parent.monitorDirectory, null);
+                parent.SetupWatcher(parent.monitorDirectory, null, parent.includeSubFolders);
             }
         }
 
@@ -218,7 +218,7 @@ namespace TextViewer
                         string? dir = Path.GetDirectoryName(filePath);
                         if (dir != null)
                         {
-                            parent.SetupWatcher(dir, filePath);
+                            parent.SetupWatcher(dir, filePath, parent.includeSubFolders);
                         }
                     }
 
@@ -270,7 +270,8 @@ namespace TextViewer
                 if (folder is not null)
                 {
                     Debug.WriteLine($"File: {fileSelect}, Folder for Watcher: {folder}");
-                    parent.watcher = new(folder);
+                    parent.SetupWatcher(null, folder, parent.includeSubFolders);
+                    //parent.watcher = new(folder) { IncludeSubdirectories = parent.includeSubFolders };
                 }
                 else
                 {

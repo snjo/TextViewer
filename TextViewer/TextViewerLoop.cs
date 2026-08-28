@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing.Imaging;
 
 namespace TextViewer
 {
@@ -8,6 +10,7 @@ namespace TextViewer
         internal readonly DirectoryView directoryView;
         internal readonly EventLogView eventLogView;
         readonly string[] arguments;
+        internal bool includeSubFolders = false;
 
         public TextViewerLoop(string[] args)
         {
@@ -156,9 +159,30 @@ namespace TextViewer
                     }
                     else if (keyInput.Key == ConsoleKey.E)
                     {
-                        previousInterfaceMode = interfaceMode;
+                        if (interfaceMode != InterfaceMode.EventLog) previousInterfaceMode = interfaceMode;
                         interfaceMode = InterfaceMode.EventLog;
                     }
+                    else if (keyInput.Key == ConsoleKey.S)
+                    {
+                        includeSubFolders = !includeSubFolders;
+                        if (watcher != null)
+                        {
+                            watcher.IncludeSubdirectories = includeSubFolders;
+                        }
+                    }
+                    //else if (keyInput.Key == ConsoleKey.X)
+                    //{
+                    //    if (watcher != null)
+                    //    {
+                    //        //watcher.Dispose();
+                    //        watcher.IncludeSubdirectories = false;
+                    //        Debug.WriteLine($"Disposing watcher");
+                    //    }
+                    //    else
+                    //    {
+                    //        Debug.WriteLine($"Watcher already null");
+                    //    }
+                    //}
                     else if (interfaceMode == InterfaceMode.FileView)
                     {
                         fileView.HandleFileViewKeys(keyInput);
@@ -219,38 +243,143 @@ namespace TextViewer
                     Console.WriteLine("Use -? to show Help");
                 }
 
-                if (first == "-?" || first == "/?")
+                if (first == "-?" || first == "/?" || first == "/help" || first == "-help")
                 {
                     Cosmetic.ShowHelp();
                     RevertConsoleColors();
                     Environment.Exit(0);
                 }
 
-                string argFile = arguments[0];
-                arguments = ["-f", argFile];
+                if (arguments[0].StartsWith('-') == false)
+                {
+                    string argFile = arguments[0];
+                    arguments = ["-f", argFile];
+                }
             }
 
-            if (arguments.Length >= 2)
+            Dictionary<string, string?> argumentPairs = [];
+            //Console.WriteLine($"Filling argument dictionary");
+            for (int i = 0; i < arguments.Length; i++)
             {
-                if (arguments[0] == "-f")
+                
+
+                if (arguments[i].StartsWith('-')) // is an argument
                 {
-                    interfaceMode = InterfaceMode.FileView;
-                    monitorTextFile = Path.GetFullPath(arguments[1]);
-                    monitorDirectory = Path.GetDirectoryName(monitorTextFile);
-                    SetupWatcher(monitorDirectory, monitorTextFile);
-                }
-                else if (arguments[0] == "-d")
-                {
-                    monitorTextFile = "";
-                    monitorDirectory = arguments[1];
-                    SetupWatcher(monitorDirectory, "*.*");
-                    interfaceMode = InterfaceMode.DirectoryView;
-                    if (arguments.Length >= 3)
+                    arguments[i] = arguments[i].ToLower();
+                    // convert short-hand arguments
+                    if (arguments[i] == "-f") arguments[i] = "-file";
+                    if (arguments[i] == "-d") arguments[i] = "-directory";
+                    if (arguments[i] == "-ft") arguments[i] = "-filter";
+                    if (arguments[i] == "-s") arguments[i] = "-subdir";
+                    if (arguments[i] == "-subdirectory") arguments[i] = "-subdir";
+
+                    if (argumentPairs.ContainsKey(arguments[i]))
                     {
-                        monitorFilter = arguments[2];
+                        Console.WriteLine($"Argument {arguments[i]} already in list, skipping");
+                        continue;
+                    }
+                    //Console.WriteLine($"Found argument {i}: {arguments[i]}");
+                    if (arguments.Length > i+1) // has more arguments/values to index
+                    {
+                        
+                        if (arguments[i + 1].StartsWith('-') == false)
+                        {
+                            //Console.WriteLine($"Found value {i+1}: {arguments[i+1]}");
+                            argumentPairs.Add(arguments[i], arguments[i + 1]);
+                            i++;
+                        }
+                        else
+                        {
+                            argumentPairs.Add(arguments[i], null);
+                            //Console.WriteLine($"Next entry start with -, not a value pair");
+                        }
+                    }
+                    else
+                    {
+                        argumentPairs.Add(arguments[i], null);
+                        //Console.WriteLine($"Last entry in list, not a value pair");
                     }
                 }
-                return;
+            }
+            //Console.WriteLine($"List of arguments ({argumentPairs.Count})");
+            foreach (var entry in argumentPairs)
+            {
+                bool overrideView = false;
+                //Console.WriteLine($"   {entry.Key} : {entry.Value}");
+                if (entry.Key == "-subdir")
+                {
+                    includeSubFolders = true;
+                    if (watcher != null)
+                    {
+                        watcher.IncludeSubdirectories = includeSubFolders;
+                    }
+                }
+
+                if (entry.Key == "-filter")
+                {
+                    if (entry.Value == null)
+                    {
+                        Console.WriteLine("Error: -filter used, but missing filter text value");
+                        Environment.Exit(1);
+                    }
+                    monitorFilter = entry.Value;
+                    if (watcher != null)
+                    {
+                        watcher.Filter = monitorFilter;
+                    }
+                }
+
+                if (entry.Key == "-file")
+                {
+                    if (entry.Value == null)
+                    {
+                        Console.WriteLine("Error: -file used, but missing file path value");
+                        Environment.Exit(1);
+                    }
+                    monitorTextFile = Path.GetFullPath(entry.Value);
+
+                    if (File.Exists(monitorTextFile) == false)
+                    {
+                        Console.WriteLine($"File does not exist: {monitorTextFile}");
+                        Environment.Exit(1);
+                    }
+
+                    monitorDirectory = Path.GetDirectoryName(monitorTextFile);
+                    SetupWatcher(monitorDirectory, monitorTextFile, includeSubFolders);
+                    if (!overrideView) interfaceMode = InterfaceMode.FileView;
+                }
+                
+                if (entry.Key == "-directory")
+                {
+                    if (entry.Value == null)
+                    {
+                        Console.WriteLine("Error: -directory used, but missing directory path value");
+                        Environment.Exit(1);
+                    }
+                    string path = entry.Value;
+                    if (path.EndsWith('\\') == false) // ensure directory paths end with backslash
+                    {
+                        path += '\\';
+                    }
+
+                    if (Directory.Exists(path) == false)
+                    {
+                        Console.WriteLine($"Directory does not exist: {path}");
+                        Environment.Exit(1);
+                    }
+
+                    monitorTextFile = "";
+                    monitorDirectory = path;
+                    SetupWatcher(monitorDirectory, null, includeSubFolders);
+                    if (!overrideView) interfaceMode = InterfaceMode.DirectoryView;
+                }
+
+                if (entry.Key == "-log")
+                {
+                    overrideView = true;
+                    interfaceMode = InterfaceMode.EventLog;
+                }
+                
             }
         }
 
@@ -258,7 +387,7 @@ namespace TextViewer
 
 
 
-        internal void SetupWatcher(string? directory, string? filePath)
+        internal void SetupWatcher(string? directory, string? filePath, bool includeSubDirectories)
         {
             if (filePath != null)
             {
@@ -296,6 +425,7 @@ namespace TextViewer
 
 
             Debug.WriteLine($"Setting up watcher, filter: {filter}, dir: {folder} --- path: {fullpath}");
+            if (watcher != null) watcher.Dispose();
             watcher = new(folder, filter)
             {
                 NotifyFilter = NotifyFilters.Attributes
@@ -305,7 +435,8 @@ namespace TextViewer
                           | NotifyFilters.LastAccess
                           | NotifyFilters.LastWrite
                           | NotifyFilters.Security
-                          | NotifyFilters.Size
+                          | NotifyFilters.Size,
+                IncludeSubdirectories = includeSubDirectories
             };
 
             watcher.Changed += Watcher_OnChanged;
@@ -380,7 +511,7 @@ namespace TextViewer
             else
             {
                 interfaceMode = InterfaceMode.MainMenu;
-                MainMenuView.UpdateMainMenuView();
+                MainMenuView.UpdateMainMenuView(this);
             }
         }
 
@@ -394,8 +525,8 @@ namespace TextViewer
 
         private void Watcher_OnChanged(object sender, FileSystemEventArgs e)
         {
-            Debug.WriteLine($"File changed at {DateTime.Now.ToShortTimeString()}");
-            Debug.WriteLine($"   {((FileSystemWatcher)sender).Path} : {e.ChangeType} {e.Name}");
+            //Debug.WriteLine($"File changed at {DateTime.Now.ToShortTimeString()}");
+            //Debug.WriteLine($"   {((FileSystemWatcher)sender).Path} : {e.ChangeType} {e.Name}");
 
             //bool changeIsDirectory = false;
             WatcherLogEntry.EntryType entryType = WatcherLogEntry.EntryType.FileEvent;
@@ -411,7 +542,7 @@ namespace TextViewer
             {
                 //changeLog.AppendLine(logMessage);
                 changeLog.Add(new WatcherLogEntry(entryType, DateTime.Now, e.FullPath, e.ChangeType));
-                Debug.WriteLine($"Change type: {entryType.ToString()} : {e.FullPath}");
+                //Debug.WriteLine($"Change type: {entryType.ToString()} : {e.FullPath}");
             }
             lastLogMessage = logMessage;
 

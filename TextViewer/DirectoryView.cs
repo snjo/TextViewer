@@ -58,7 +58,7 @@ namespace TextViewer
             {
                 parent.monitorDirectory = directorySelect;
                 parent.interfaceMode = InterfaceMode.DirectoryView;
-                parent.SetupWatcher(directorySelect, null);
+                parent.SetupWatcher(directorySelect, null, parent.includeSubFolders);
                 parent.directoryView.ResetScroll();
             }
             else
@@ -323,7 +323,7 @@ namespace TextViewer
                 {
                     parent.monitorDirectory = subDirectories[selectedItem];
                     parent.interfaceMode = InterfaceMode.DirectoryView;
-                    parent.SetupWatcher(parent.monitorDirectory, null);
+                    parent.SetupWatcher(parent.monitorDirectory, null, parent.includeSubFolders);
                     textScroller.scrollPosition = 0;
                     selectedLine = 0;
                 }
@@ -345,7 +345,7 @@ namespace TextViewer
                 parent.monitorDirectory = Path.GetDirectoryName(parent.monitorDirectory); // parent directory
                 Debug.WriteLine($"                               to {parent.monitorDirectory}");
                 parent.interfaceMode = InterfaceMode.DirectoryView;
-                parent.SetupWatcher(parent.monitorDirectory, null);
+                parent.SetupWatcher(parent.monitorDirectory, null, parent.includeSubFolders);
                 textScroller.scrollPosition = 0;
                 selectedLine = 0;
             }

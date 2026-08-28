@@ -1,8 +1,10 @@
-﻿namespace TextViewer
+﻿using System.ComponentModel;
+
+namespace TextViewer
 {
     internal class MainMenuView
     {
-        internal static void UpdateMainMenuView()
+        internal static void UpdateMainMenuView(TextViewerLoop parent)
         {
             Cosmetic.ShowTitleBar("TextViewer");
             Console.Write(" F   ");
@@ -13,6 +15,11 @@
             Console.Write(" D   ");
             Cosmetic.SetColor(ConsoleColor.Cyan);
             Console.WriteLine("Open Directory");
+
+            Cosmetic.SetColor(ConsoleColor.White);
+            Console.Write(" S   ");
+            Cosmetic.SetColor(ConsoleColor.Cyan);
+            Console.WriteLine($"Toggle include Subfolders in log [{parent.includeSubFolders}]");
 
             Cosmetic.SetColor(ConsoleColor.White);
             Console.Write(" Q   ");
