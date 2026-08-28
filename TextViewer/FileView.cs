@@ -261,6 +261,7 @@ namespace TextViewer
             }
 
             Debug.WriteLine($"File selected {fileSelect}");
+            fileSelect = Environment.ExpandEnvironmentVariables(fileSelect);
             fileSelect = Path.GetFullPath(fileSelect);
             Debug.WriteLine($"Full path: {fileSelect}");
 

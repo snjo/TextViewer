@@ -18,8 +18,8 @@ namespace TextViewer
             }
             string dingDir = parent.alertWhenDirectoryChanged ? "🔔 Dir" : "🔕 Dir";
             string dingFile = parent.alertWhenFileChanged ? "🔔 File" : "🔕 File";
-            //string wathcSubDir = parent.includeSubFolders ? "📂+" : "📁.";
-            string wathcSubDir = parent.watcher.IncludeSubdirectories ? "📂+" : "📁."; // test
+            string wathcSubDir = parent.includeSubFolders ? "📂+" : "📁.";
+            //string wathcSubDir = parent.watcher.IncludeSubdirectories ? "📂+" : "📁."; // test
             Cosmetic.ShowTitleBar($"Event Log : {directory}".PadRight(Console.BufferWidth - 22) + $"{wathcSubDir} " + $"{dingDir}  {dingFile}");
             //Console.WriteLine(parent.changeLog.ToString());
             Console.WriteLine("Date".PadRight(12) + "Time".PadRight(10) + "Entry type".PadRight(16) + "Information".PadRight(16) + "Change type".PadRight(16) + "Path");

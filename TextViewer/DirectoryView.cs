@@ -30,12 +30,15 @@ namespace TextViewer
             Console.Write(" Directory: ");
             string directorySelect = Console.ReadLine() + "";
             if (directorySelect.Length == 0) directorySelect = ".";
-            if (directorySelect.Substring(directorySelect.Length - 1, 1) != "\\")
+            if (directorySelect.EndsWith('\\') == false)
             {
                 // this prevents "c:" from being interpreted as the program's folder by making it "c:\"
                 directorySelect += "\\";
                 Debug.WriteLine($"Adding \\ to end of directory: {directorySelect}");
             }
+
+            directorySelect = Environment.ExpandEnvironmentVariables(directorySelect);
+
             Console.Write(" Filter: ");
             Cosmetic.SetColor(ConsoleColor.Gray);
             Console.Write("*");
@@ -64,8 +67,8 @@ namespace TextViewer
             else
             {
                 Cosmetic.SetColor(ConsoleColor.Red);
-                Console.WriteLine("Directory does not exist.");
-                Debug.WriteLine("Directory does not exist.");
+                Console.WriteLine($"Directory does not exist: {directorySelect}");
+                Debug.WriteLine($"Directory does not exist: {directorySelect}");
                 Console.ReadKey();
                 Debug.WriteLine("Exiting Directory select");
                 parent.interfaceMode = InterfaceMode.MainMenu;

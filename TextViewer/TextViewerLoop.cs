@@ -336,7 +336,8 @@ namespace TextViewer
                         Console.WriteLine("Error: -file used, but missing file path value");
                         Environment.Exit(1);
                     }
-                    monitorTextFile = Path.GetFullPath(entry.Value);
+                    string path = Environment.ExpandEnvironmentVariables(entry.Value);
+                    monitorTextFile = Path.GetFullPath(path);
 
                     if (File.Exists(monitorTextFile) == false)
                     {
@@ -361,6 +362,8 @@ namespace TextViewer
                     {
                         path += '\\';
                     }
+
+                    path = Environment.ExpandEnvironmentVariables(path);
 
                     if (Directory.Exists(path) == false)
                     {
