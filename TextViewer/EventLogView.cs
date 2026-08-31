@@ -42,7 +42,12 @@ namespace TextViewer
                 scroller.SetColor(Color.Cyan);
                 scroller.AddTextToLine($"{entry.entryType,-16}{entry.info,-16}");
                 scroller.SetColor(Color.LightGreen);
-                scroller.FinishLine($"{entry.watcherChangeType,-16}{TerminalCodes.ForegroundWhite}{entry.path}", true);
+                string additional = "";
+                if (entry.watcherChangeType == WatcherChangeTypes.Renamed)
+                {
+                    additional = $" (was {entry.oldName})";
+                }
+                scroller.FinishLine($"{entry.watcherChangeType,-16}{TerminalCodes.ForegroundWhite}{entry.path}{additional}", true);
             }
         }
 
@@ -62,7 +67,7 @@ namespace TextViewer
             else if (keyInput.Key == ConsoleKey.J)
             {
                 // test log entries
-                parent.changeLog.Add(new WatcherLogEntry(WatcherLogEntry.EntryType.Information, DateTime.Now, "No file", WatcherChangeTypes.All, "test enry" + DateTime.Now.Microsecond));
+                parent.changeLog.Add(new WatcherLogEntry(WatcherLogEntry.EntryType.Information, DateTime.Now, "No file", null, WatcherChangeTypes.All, "test enry" + DateTime.Now.Microsecond));
             }
             else if (keyInput.Key == ConsoleKey.PageDown || (keyInput.Key == ConsoleKey.DownArrow && keyInput.Modifiers == ConsoleModifiers.Shift))
             {

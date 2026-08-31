@@ -394,11 +394,11 @@ namespace TextViewer
         {
             if (filePath != null)
             {
-                changeLog.Add(new WatcherLogEntry(WatcherLogEntry.EntryType.WatcherConfig, DateTime.Now, filePath, null, "File"));
+                changeLog.Add(new WatcherLogEntry(WatcherLogEntry.EntryType.WatcherConfig, DateTime.Now, _path:filePath, _name:null, _watcherChangeType:null, _info:"File"));
             }
             else if (directory != null)
             {
-                changeLog.Add(new WatcherLogEntry(WatcherLogEntry.EntryType.WatcherConfig, DateTime.Now, directory, null, "Directory"));
+                changeLog.Add(new WatcherLogEntry(WatcherLogEntry.EntryType.WatcherConfig, DateTime.Now, _path:directory, _name:null, _watcherChangeType:null, _info:"Directory"));
             }
 
             Debug.WriteLine($"SetupWatcher start, dir:{directory}, filePath:{filePath}");
@@ -445,7 +445,7 @@ namespace TextViewer
             watcher.Changed += Watcher_OnChanged;
             watcher.Created += Watcher_OnChanged;
             watcher.Deleted += Watcher_OnChanged;
-            watcher.Renamed += Watcher_OnChanged;
+            watcher.Renamed += Watcher_OnRenamed;
             watcher.Error += Watcher_OnError;
 
             //watcher.NotifyFilter = NotifyFilters.LastWrite;
@@ -526,7 +526,27 @@ namespace TextViewer
         string lastLogMessage = "";
         DateTime lastDing = DateTime.MinValue;
 
+        private void Watcher_OnRenamed(object sender, RenamedEventArgs e)
+        {
+            string newFullPath = e.FullPath;
+            string oldFullPath = e.OldFullPath;
+            var ChangeType = e.ChangeType;
+            string? newName = e.Name;
+            string? oldName = e.OldName;
+            WatcherEvent(newFullPath, oldFullPath, newName, oldName, ChangeType);
+        }
+
         private void Watcher_OnChanged(object sender, FileSystemEventArgs e)
+        {
+            string FullPath = e.FullPath;
+            string? oldFullPath = null;
+            var ChangeType = e.ChangeType;
+            string? newName = e.Name;
+            string? oldName = null;
+            WatcherEvent(FullPath, oldFullPath, newName, oldName, ChangeType);
+        }
+
+        private void WatcherEvent(string FullPath, string? OldFullPath, string? Name, string? OldName, WatcherChangeTypes ChangeType)
         {
             //Debug.WriteLine($"File changed at {DateTime.Now.ToShortTimeString()}");
             //Debug.WriteLine($"   {((FileSystemWatcher)sender).Path} : {e.ChangeType} {e.Name}");
@@ -534,24 +554,24 @@ namespace TextViewer
             //bool changeIsDirectory = false;
             WatcherLogEntry.EntryType entryType = WatcherLogEntry.EntryType.FileEvent;
 
-            if (Directory.Exists(e.FullPath))
+            if (Directory.Exists(FullPath))
             {
                 //changeIsDirectory = true;
                 entryType = WatcherLogEntry.EntryType.DirectoryEvent;
             }
 
-            string logMessage = $"{DateTime.Now.ToShortDateString()} {DateTime.Now.ToLongTimeString()}: {e.ChangeType}, {e.Name}";
+            string logMessage = $"{DateTime.Now.ToShortDateString()} {DateTime.Now.ToLongTimeString()}: {ChangeType}, {FullPath}";
             if (logMessage != lastLogMessage) // deduplicate identical messages from spammy watcher
             {
                 //changeLog.AppendLine(logMessage);
-                changeLog.Add(new WatcherLogEntry(entryType, DateTime.Now, e.FullPath, e.ChangeType));
+                changeLog.Add(new WatcherLogEntry(entryType, DateTime.Now, FullPath, Name, ChangeType, "", OldFullPath, OldName));
                 //Debug.WriteLine($"Change type: {entryType.ToString()} : {e.FullPath}");
             }
             lastLogMessage = logMessage;
 
             if ((entryType == WatcherLogEntry.EntryType.DirectoryEvent && alertWhenDirectoryChanged) || (entryType == WatcherLogEntry.EntryType.FileEvent && alertWhenFileChanged))
             {
-                if (checkAlertType(e.ChangeType) && DateTime.Now - lastDing > TimeSpan.FromSeconds(5)) // check if user wants ding for this type, and prevent dinging too often.
+                if (checkAlertType(ChangeType) && DateTime.Now - lastDing > TimeSpan.FromSeconds(5)) // check if user wants ding for this type, and prevent dinging too often.
                 {
                     Console.Write("\a"); // ding bell
                     lastDing = DateTime.Now;
