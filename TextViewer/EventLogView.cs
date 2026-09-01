@@ -1,5 +1,8 @@
 ﻿using System.Diagnostics;
 using System.Drawing;
+using System.Linq.Expressions;
+using System.Reflection.Metadata;
+using System.Text;
 
 namespace TextViewer
 {
@@ -35,19 +38,33 @@ namespace TextViewer
         private void AssembleScrollableText()
         {
             scroller.ResetLines();
-            foreach (WatcherLogEntry entry in parent.changeLog)
+            try
             {
-                scroller.SetColor(Color.Blue);
-                scroller.AddTextToLine($"{entry.time.ToShortDateString(),-12}{entry.time.ToLongTimeString(),-10}");
-                scroller.SetColor(Color.Cyan);
-                scroller.AddTextToLine($"{entry.entryType,-16}{entry.info,-16}");
-                scroller.SetColor(Color.LightGreen);
-                string additional = "";
-                if (entry.watcherChangeType == WatcherChangeTypes.Renamed)
+                foreach (WatcherLogEntry entry in parent.changeLog)
                 {
-                    additional = $" (was {entry.oldName})";
+                    scroller.SetColor(Color.Blue);
+                    scroller.AddTextToLine($"{entry.time.ToShortDateString(),-12}{entry.time.ToLongTimeString(),-10}");
+                    scroller.SetColor(Color.Cyan);
+                    scroller.AddTextToLine($"{entry.entryType,-16}{entry.info,-16}");
+                    scroller.SetColor(Color.LightGreen);
+                    string additional = "";
+                    if (entry.watcherChangeType == WatcherChangeTypes.Renamed)
+                    {
+                        additional = $" (was {entry.oldName})";
+                    }
+                    string line = $"{entry.watcherChangeType,-16}{TerminalCodes.ForegroundWhite}{entry.path}{additional}";
+                    int maxLength = Console.BufferWidth - scroller.CurrentLineLength;
+                    //Debug.WriteLine($"Buffer {Console.BufferWidth} - scrollerL {scroller.CurrentLineLength} = {maxLength}");
+                    if (line.Length > maxLength)
+                    {
+                        line = line.Substring(0, maxLength +4) + "…"; // +4 to compensate for a hidden color tag in the line
+                    }
+                    scroller.FinishLine(line, true);
                 }
-                scroller.FinishLine($"{entry.watcherChangeType,-16}{TerminalCodes.ForegroundWhite}{entry.path}{additional}", true);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Exception during AssembleScrollable text:\n{ex.Message}");
             }
         }
 
@@ -93,7 +110,32 @@ namespace TextViewer
             {
                 scroller.ScrollToBeginning();
             }
+            else if (keyInput.Key == ConsoleKey.X)
+            {
+                Debug.WriteLine($"Export log");
+                ExportEventLogToFile();
+            }
 
+        }
+
+        private void ExportEventLogToFile()
+        {
+            StringBuilder logLines = new();
+            foreach (var entry in parent.changeLog)
+            {
+                logLines.Append($"{entry.time.ToShortDateString(),-12}{entry.time.ToLongTimeString(),-10}");
+
+                logLines.Append($"{entry.entryType,-16}{entry.info,-16}");
+                
+                string additional = "";
+                if (entry.watcherChangeType == WatcherChangeTypes.Renamed)
+                {
+                    additional = $" (was {entry.oldName})";
+                }
+                logLines.Append($"{entry.watcherChangeType,-16}{entry.path}{additional}");
+                logLines.AppendLine();
+            }
+            File.WriteAllText($"EventLog {DateTime.Now.Year}-{DateTime.Now.Month}-{DateTime.Now.Day} {DateTime.Now.Hour}_{DateTime.Now.Minute}_{DateTime.Now.Second}.txt", logLines.ToString());
         }
 
         void AddToScroll(int change)

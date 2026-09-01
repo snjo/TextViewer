@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System.Diagnostics;
+using System.Drawing;
 using System.Text;
 
 namespace TextViewer
@@ -50,6 +51,7 @@ namespace TextViewer
         }
 
         private readonly StringBuilder currentLineBuilder = new();
+        private readonly StringBuilder plainText = new();
 
         public List<string> Lines = [];
 
@@ -79,7 +81,7 @@ namespace TextViewer
 
         public void ResetLineBuilder()
         {
-            currentLineBuilder.Clear();
+            ClearCurrentLine();
         }
 
         public void ResetLines(bool resetScroll = false)
@@ -94,11 +96,18 @@ namespace TextViewer
         public void AddTextToLine(string text)
         {
             currentLineBuilder.Append(text);
+            plainText.Append(text);
+        }
+
+        private void ClearCurrentLine()
+        {
+            currentLineBuilder.Clear();
+            plainText.Clear();
         }
 
         public void FinishLine(string text, bool addToStartOfLines = false)
         {
-            currentLineBuilder.Append(text);
+            AddTextToLine(text);
             if (addToStartOfLines)
             {
                 Lines.Insert(0, currentLineBuilder.ToString());
@@ -107,12 +116,17 @@ namespace TextViewer
             {
                 Lines.Add(currentLineBuilder.ToString());
             }
-            currentLineBuilder.Clear();
+            ClearCurrentLine();
         }
 
         public string GetLineInProgress()
         {
             return currentLineBuilder.ToString();
+        }
+
+        public string GetLineInProgressPlainText()
+        {
+            return plainText.ToString();
         }
 
         public void SetColor(Color color, bool background = false)
@@ -127,6 +141,7 @@ namespace TextViewer
                 colorCode = TerminalCodes.RGBtoForeground(color);
             }
             currentLineBuilder.Append(colorCode);
+            // don't append to plain text
         }
 
         public List<string> GetLines()
@@ -204,6 +219,15 @@ namespace TextViewer
 
             bool atStart = HiglightLine <= scrollPosition;
             return atStart;
+        }
+
+        public int CurrentLineLength
+        {
+            get
+            {
+                //Debug.WriteLine($"CLB: {plainText.ToString()}<<<");
+                return plainText.Length;
+            }
         }
     }
 }
